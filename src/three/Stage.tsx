@@ -1,27 +1,58 @@
 import { CameraControls, Environment, Lightformer } from '@react-three/drei'
 import { Canvas, useThree } from '@react-three/fiber'
 import { Suspense, useCallback, useEffect, useRef } from 'react'
+import * as THREE from 'three'
 import type { Plant } from '../data/types'
 import type { CameraCommand, ViewMode } from '../viewTypes'
 import { plantBounds } from './models/registry'
 import { Specimen, type SpecimenProps } from './Specimen'
 
 const FOV = 32
+const TAN = Math.tan((FOV * Math.PI) / 360)
+/** Stage widths below this use the stacked mobile layout (see index.css). */
+const NARROW = 900
 
-/** Frames the specimen for each view, accounting for the viewport aspect. */
-function framing(plant: Plant, mode: ViewMode, aspect: number) {
+/**
+ * Screen areas (px) covered by overlay UI; the specimen is framed into what
+ * remains. Desktop: title on the left, selector below. Narrow: title above,
+ * mode switch and selector below, tools on the right.
+ */
+function safeInsets(width: number, mode: ViewMode) {
+  if (width < NARROW) return { top: 140, bottom: 140, left: 8, right: 60 }
+  // The root view adds a caption under the title, so keep more room on the left.
+  const left = mode === 'roots' ? Math.min(width * 0.28, 360) : Math.min(width * 0.2, 300)
+  return { top: 84, bottom: 96, left, right: 64 }
+}
+
+/** Frames the specimen for each view inside the safe area of the stage. */
+function framing(plant: Plant, mode: ViewMode, width: number, height: number) {
   const { height: potH, radius: potR } = plant.pot
-  const bounds = plantBounds(plant)
-  const spread = Math.max(potR * 2.4, bounds.radius * 2)
+  const b = plantBounds(plant)
+  // Root view: pot on the left, depth scale and its labels on the right
+  // (rulerLayout places the scale at 1.06 R + 3.5 cm).
+  const rootLeft = -potR * 1.08
+  const rootRight = potR * 1.06 + 0.035 + 0.11
   const box =
     mode === 'roots'
-      ? { top: 0.05, bottom: -potH - 0.09, width: potR * 2 + 0.32, x: 0.05, elevation: 0.3, margin: 1.15 }
-      : { top: bounds.top, bottom: Math.min(-potH - 0.02, -bounds.radius * 0.1), width: spread, x: 0, elevation: 0.14, margin: mode === 'anatomy' ? 1.08 : 1.16 }
+      ? { top: 0.05, bottom: -potH - 0.09, width: rootRight - rootLeft, x: (rootLeft + rootRight) / 2, elevation: 0.3, margin: 1.08 }
+      : {
+          top: b.top,
+          bottom: -potH - 0.02,
+          // Frame the body; far tips may run off-screen, more so on narrow stages.
+          width: Math.max(potR * 2.4, Math.min(b.reach * 2, b.body * (width < NARROW ? 2 : 2.5))),
+          x: 0,
+          elevation: 0.14,
+          margin: mode === 'anatomy' ? 1.04 : 1.1,
+        }
 
-  const h = box.top - box.bottom
-  const tan = Math.tan((FOV * Math.PI) / 360)
-  const shift = aspect > 1.15 ? 0.09 : 0
-  const distance = Math.max(h / 2 / tan, box.width / 2 / (tan * aspect) / (1 - 2 * shift)) * box.margin
+  const inset = safeInsets(width, mode)
+  const effW = Math.max(120, width - inset.left - inset.right)
+  const effH = Math.max(160, height - inset.top - inset.bottom)
+  const aspect = width / Math.max(1, height)
+  const fitH = ((box.top - box.bottom) / 2 / TAN) * (height / effH)
+  const fitW = (box.width / 2 / (TAN * aspect)) * (width / effW)
+  const distance = Math.max(fitH, fitW) * box.margin
+
   const target: [number, number, number] = [box.x, (box.top + box.bottom) / 2, 0]
   const azimuth = 0.42
   const position: [number, number, number] = [
@@ -29,10 +60,14 @@ function framing(plant: Plant, mode: ViewMode, aspect: number) {
     target[1] + distance * Math.sin(box.elevation),
     target[2] + distance * Math.cos(box.elevation) * Math.cos(azimuth),
   ]
-  // On wide stages, nudge the specimen right so the title keeps clear air.
-  const visibleWidth = 2 * distance * tan * aspect
-  const offsetX = visibleWidth * shift
-  return { position, target, distance, offsetX }
+  // Shift the view so the specimen centres in the safe area, not the canvas.
+  const visibleH = 2 * distance * TAN
+  const visibleW = visibleH * aspect
+  const offset: [number, number] = [
+    -(((inset.left - inset.right) / 2) / width) * visibleW,
+    (((inset.top - inset.bottom) / 2) / height) * visibleH,
+  ]
+  return { position, target, distance, offset }
 }
 
 interface RigProps {
@@ -44,19 +79,20 @@ interface RigProps {
 
 function CameraRig({ plant, mode, command, reducedMotion }: RigProps) {
   const controls = useRef<CameraControls>(null)
-  const aspect = useThree((s) => s.size.width / Math.max(1, s.size.height))
+  const width = useThree((s) => s.size.width)
+  const height = useThree((s) => s.size.height)
 
   const frame = useCallback(
     (animate: boolean) => {
       const c = controls.current
       if (!c) return
-      const { position, target, distance, offsetX } = framing(plant, mode, aspect)
+      const { position, target, distance, offset } = framing(plant, mode, width, height)
       c.minDistance = distance * 0.22
       c.maxDistance = distance * 2.4
       c.setLookAt(...position, ...target, animate && !reducedMotion)
-      c.setFocalOffset(-offsetX, 0, 0, animate && !reducedMotion)
+      c.setFocalOffset(offset[0], offset[1], 0, animate && !reducedMotion)
     },
-    [plant, mode, aspect, reducedMotion],
+    [plant, mode, width, height, reducedMotion],
   )
 
   const framed = useRef(false)
@@ -82,7 +118,8 @@ export interface StageProps extends SpecimenProps {
 export function Stage({ command, ...specimen }: StageProps) {
   return (
     <Canvas
-      shadows
+      // PCFSoftShadowMap is deprecated in current three.js; PCF is what it falls back to anyway.
+      shadows={{ type: THREE.PCFShadowMap }}
       dpr={[1, 2]}
       camera={{ fov: FOV, position: [0.6, 0.6, 2], near: 0.01, far: 40 }}
       gl={{ antialias: true, alpha: true }}

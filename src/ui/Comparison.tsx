@@ -115,12 +115,13 @@ function Lineup({ plants, onOpen }: { plants: Plant[]; onOpen: (id: string) => v
         const unit = px(max) / 122
         const w = unit * 108
         const cx = 60 + slot * (i + 1.5)
-        const bx = cx + slot / 2 - 14
+        // Bracket beside the plant body, but never into the neighbouring slot.
+        const bx = cx + Math.min(w * 0.42 + 8, slot / 2 - 14)
         return (
           <g key={p.id} className="lineup__plant" style={{ color: p.swatch }} onClick={() => onOpen(p.id)}>
             <PlantGlyph plant={p} x={cx - w / 2} y={base - unit * 130} width={w} height={unit * 132} />
             <path d={`M${bx - 4} ${y(max)}h4V${y(min)}h-4`} className="lineup__bracket" />
-            <text x={bx} y={y(max) - 8} textAnchor="middle" className="viz-text viz-text--strong">
+            <text x={bx} y={y(max) - 8} textAnchor="end" className="viz-text viz-text--strong">
               {min}–{max} cm
             </text>
             <text x={cx} y={base + 18} textAnchor="middle" className="viz-text viz-text--strong">

@@ -8,12 +8,14 @@ export type RulerLabel =
 /**
  * Geometry of the root-view measuring overlay, in the camera-facing frame
  * centred on the pot axis. Shared by the 3D lines and the DOM labels.
+ * `measured` (metres, from the rendered roots) positions the guides so they
+ * match the geometry; labels always show the documented values.
  */
-export function rulerLayout(plant: Plant) {
+export function rulerLayout(plant: Plant, measured?: { depth: number; spread: number }) {
   const { radius: R, height: H } = plant.pot
   const soilY = soilLevel(H)
-  const depthY = soilY - plant.roots.depthCm / 100
-  const spread = plant.roots.spreadCm / 100
+  const depthY = soilY - (measured?.depth ?? plant.roots.depthCm / 100)
+  const spread = measured?.spread ?? plant.roots.spreadCm / 100
   const x = R * 1.06 + 0.035
   const tickCount = Math.floor((soilY + H) * 100)
 

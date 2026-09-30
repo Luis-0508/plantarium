@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { MonthPlan } from '../../data/types'
 
 const MONTHS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
@@ -5,7 +6,7 @@ const MONTH_NAMES = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli
 
 /** Year strip: fertilising season, repotting window and the current month. */
 export function CareCalendar({ plan }: { plan: MonthPlan }) {
-  const now = new Date().getMonth() + 1
+  const [now] = useState(() => new Date().getMonth() + 1)
   const describe = (m: number) =>
     [MONTH_NAMES[m - 1], plan.fertilize.includes(m) && 'düngen', plan.repot.includes(m) && 'umtopfen'].filter(Boolean).join(', ')
   return (

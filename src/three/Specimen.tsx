@@ -101,7 +101,7 @@ export function Specimen(props: SpecimenProps) {
     if (growGroup.current) {
       const s = Math.max(0.0001, easeOut(a.grow))
       growGroup.current.scale.set(s, s ** 0.85, s)
-      growGroup.current.rotation.y = (1 - s) * 0.9
+      growGroup.current.rotation.y = (1 - s) * 0.35
     }
   })
 

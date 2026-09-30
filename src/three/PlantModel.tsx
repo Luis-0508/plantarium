@@ -1,10 +1,10 @@
 import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { useEffect, useMemo, type RefObject } from 'react'
+import { Component, Suspense, useMemo, useRef, type ReactNode, type RefObject } from 'react'
 import * as THREE from 'three'
 import type { AnatomyRegion, Plant } from '../data/types'
 import type { StageAnim } from '../viewTypes'
-import { withWind } from './materials'
+import { foliageShader } from './materials'
 import { buildProceduralGeometry } from './models/registry'
 
 interface Props {
@@ -14,59 +14,104 @@ interface Props {
 
 const ROOT_GLOW = new THREE.Color('#f7f3e6')
 const HIGHLIGHT = new THREE.Color('#fffbe8')
+/** Opacity foliage keeps in root view, so the roots stay readable. */
+const SHOOT_VEIL = 0.16
 
-/** Renders the plant's shoot and roots, choosing procedural or GLTF source. */
+/** Renders the plant's shoot and roots from a procedural generator or a GLB file. */
 export function PlantModel({ plant, anim }: Props) {
-  if (plant.model.kind === 'gltf') return <GltfPlant url={plant.model.url} rootsUrl={plant.model.rootsUrl} />
-  return <ProceduralPlant plant={plant} anim={anim} />
+  const model = plant.model
+  if (model.kind === 'procedural') return <ProceduralPlant key={plant.id} plant={plant} anim={anim} />
+
+  const fallback = model.fallback ? <ProceduralPlant key={`${plant.id}-fallback`} plant={{ ...plant, model: model.fallback }} anim={anim} /> : null
+  return (
+    <ModelErrorBoundary fallback={fallback} url={model.url}>
+      <Suspense fallback={fallback}>
+        <GltfPlant url={model.url} rootsUrl={model.rootsUrl} />
+      </Suspense>
+    </ModelErrorBoundary>
+  )
+}
+
+function FoliageMaterial({ height, roughness, materialRef }: { height: number; roughness: number; materialRef: RefObject<THREE.MeshStandardMaterial | null> }) {
+  const shader = useMemo(() => foliageShader(height), [height])
+  return (
+    <meshStandardMaterial
+      ref={materialRef}
+      vertexColors
+      roughness={roughness}
+      side={THREE.DoubleSide}
+      emissive={HIGHLIGHT}
+      emissiveIntensity={0}
+      transparent
+      onBeforeCompile={shader.onBeforeCompile}
+      customProgramCacheKey={shader.customProgramCacheKey}
+    />
+  )
 }
 
 function ProceduralPlant({ plant, anim }: Props) {
   const geometry = useMemo(() => buildProceduralGeometry(plant), [plant])
   const height = plant.dimensions.specimenHeight
-
-  const materials = useMemo(() => {
-    const surface = (roughness: number) =>
-      new THREE.MeshStandardMaterial({ vertexColors: true, roughness, side: THREE.DoubleSide, emissive: HIGHLIGHT, emissiveIntensity: 0, transparent: true })
-    return {
-      leaf: withWind(surface(0.58), height),
-      stem: withWind(surface(0.62), height),
-      crown: withWind(surface(0.7), height),
-      roots: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75, emissive: ROOT_GLOW, emissiveIntensity: 0 }),
-    }
-  }, [height])
-
-  useEffect(() => () => Object.values(materials).forEach((m) => m.dispose()), [materials])
+  const leaf = useRef<THREE.MeshStandardMaterial>(null)
+  const stem = useRef<THREE.MeshStandardMaterial>(null)
+  const crown = useRef<THREE.MeshStandardMaterial>(null)
+  const roots = useRef<THREE.MeshStandardMaterial>(null)
 
   useFrame(() => {
     const a = anim.current
     if (!a) return
-    // Foliage recedes to a veil in root view so the roots stay readable.
-    const shootOpacity = 1 - a.reveal * 0.84
-    for (const m of [materials.leaf, materials.stem, materials.crown]) {
+    const shootOpacity = 1 - a.reveal * (1 - SHOOT_VEIL)
+    const parts: [THREE.MeshStandardMaterial | null, number][] = [
+      [leaf.current, a.highlight.leaf * 0.28],
+      [stem.current, a.highlight.stem * 0.35],
+      [crown.current, a.highlight.crown * 0.35],
+    ]
+    for (const [m, glow] of parts) {
+      if (!m) continue
       m.opacity = shootOpacity
       m.depthWrite = shootOpacity > 0.95
+      m.emissiveIntensity = glow
     }
-    materials.leaf.emissiveIntensity = a.highlight.leaf * 0.28
-    materials.stem.emissiveIntensity = a.highlight.stem * 0.35
-    materials.crown.emissiveIntensity = a.highlight.crown * 0.35
     // In root view the roots print like a cyanotype: bright, low-contrast.
-    materials.roots.emissiveIntensity = a.reveal * 0.55 + a.highlight.roots * 0.3
-    materials.roots.roughness = 0.75 + a.reveal * 0.2
+    if (roots.current) {
+      roots.current.emissiveIntensity = a.reveal * 0.55 + a.highlight.roots * 0.3
+      roots.current.roughness = 0.75 + a.reveal * 0.2
+    }
   })
-
-  const part = (region: AnatomyRegion, geo: THREE.BufferGeometry, material: THREE.Material, shadows = true) => (
-    <mesh geometry={geo} material={material} userData={{ region }} castShadow={shadows} receiveShadow={shadows} />
-  )
 
   return (
     <group>
-      {part('leaf', geometry.leaves, materials.leaf)}
-      {part('stem', geometry.stems, materials.stem)}
-      {part('crown', geometry.crown, materials.crown)}
-      {part('roots', geometry.roots, materials.roots, false)}
+      <mesh geometry={geometry.leaves} userData={{ region: 'leaf' }} castShadow receiveShadow>
+        <FoliageMaterial height={height} roughness={0.58} materialRef={leaf} />
+      </mesh>
+      <mesh geometry={geometry.stems} userData={{ region: 'stem' }} castShadow receiveShadow>
+        <FoliageMaterial height={height} roughness={0.62} materialRef={stem} />
+      </mesh>
+      <mesh geometry={geometry.crown} userData={{ region: 'crown' }} castShadow receiveShadow>
+        <FoliageMaterial height={height} roughness={0.7} materialRef={crown} />
+      </mesh>
+      <mesh geometry={geometry.roots} userData={{ region: 'roots' as AnatomyRegion }}>
+        <meshStandardMaterial ref={roots} vertexColors roughness={0.75} emissive={ROOT_GLOW} emissiveIntensity={0} />
+      </mesh>
     </group>
   )
+}
+
+/** Falls back to the procedural model if a GLB file is missing or invalid. */
+class ModelErrorBoundary extends Component<{ fallback: ReactNode; url: string; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+
+  componentDidCatch(error: unknown) {
+    console.warn(`Plant model ${this.props.url} could not be loaded; showing fallback.`, error)
+  }
+
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children
+  }
 }
 
 const REGION_PATTERN: [RegExp, AnatomyRegion][] = [
@@ -79,6 +124,7 @@ const REGION_PATTERN: [RegExp, AnatomyRegion][] = [
 /**
  * Loads a modelled plant. Mesh names map to anatomy regions ("leaf_*",
  * "stem_*", "crown_*", "roots_*"), so picking and hotspots keep working.
+ * Not yet exercised with a real asset.
  */
 function GltfPlant({ url, rootsUrl }: { url: string; rootsUrl?: string }) {
   const { scene } = useGLTF(url)

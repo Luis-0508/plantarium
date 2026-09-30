@@ -1,8 +1,8 @@
 import { useFrame } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, type RefObject } from 'react'
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import * as THREE from 'three'
 import type { StageAnim } from '../viewTypes'
-import { createGhostMaterial, createRadialTexture, createSoilTexture } from './materials'
+import { createGhostMaterial, createPotTexture, createRadialTexture, createSoilTexture } from './materials'
 import { POT_BASE, POT_TAPER, POT_WALL, SOIL_DROP, innerRadiusAt } from './models/potShape'
 
 interface Props {
@@ -36,9 +36,21 @@ const STIPPLE_COUNT = 2200
  * Pot, soil body, top dressing and the root-view stipple. Built at unit size
  * and eased toward each plant's pot dimensions so plant switches morph.
  */
+const STIPPLE_ROOT = new THREE.Color('#dfe7ef')
+const STIPPLE_SOIL = new THREE.Color('#4a3a2c')
+const GHOST_PLANT = new THREE.Color('#33443b')
+const GHOST_ROOT = new THREE.Color('#e6eef7')
+
 export function Vessel({ radius, height, color, anim }: Props) {
   const group = useRef<THREE.Group>(null)
   const shadow = useRef<THREE.Mesh>(null)
+  const potMat = useRef<THREE.MeshStandardMaterial>(null)
+  const ghostMesh = useRef<THREE.Mesh>(null)
+  const soilSide = useRef<THREE.MeshStandardMaterial>(null)
+  const soilTop = useRef<THREE.MeshStandardMaterial>(null)
+  const soilBottom = useRef<THREE.MeshStandardMaterial>(null)
+  const stipple = useRef<THREE.PointsMaterial>(null)
+  const shadowMat = useRef<THREE.MeshBasicMaterial>(null)
   const size = useRef({ r: radius, h: height })
 
   const potGeometry = useMemo(() => new THREE.LatheGeometry(potProfile(), 72), [])
@@ -65,32 +77,19 @@ export function Vessel({ radius, height, color, anim }: Props) {
     return geo
   }, [])
 
-  const mats = useMemo(() => {
-    const soilTexture = createSoilTexture()
-    return {
-      pot: new THREE.MeshStandardMaterial({ color, roughness: 0.88, metalness: 0, transparent: true }),
-      ghost: createGhostMaterial(),
-      soilSide: new THREE.MeshStandardMaterial({ color: '#3a2b1f', roughness: 1, transparent: true }),
-      soilTop: new THREE.MeshStandardMaterial({ map: soilTexture, roughness: 1, transparent: true }),
-      stipple: new THREE.PointsMaterial({ color: '#dfe7ef', size: 0.0032, transparent: true, depthWrite: false, opacity: 0 }),
-      shadow: new THREE.MeshBasicMaterial({ map: createRadialTexture(), transparent: true, depthWrite: false }),
-    }
-    // Created once; the pot colour is eased toward `color` in useFrame.
-  }, [])
-
+  const textures = useMemo(() => ({ soil: createSoilTexture(), pot: createPotTexture(), shadow: createRadialTexture() }), [])
+  const ghostMaterial = useMemo(() => createGhostMaterial(), [])
   useEffect(
     () => () => {
-      Object.values(mats).forEach((m) => {
-        ;(m as THREE.MeshStandardMaterial).map?.dispose()
-        m.dispose()
-      })
+      Object.values(textures).forEach((t) => t.dispose())
+      ghostMaterial.dispose()
     },
-    [mats],
+    [textures, ghostMaterial],
   )
 
+  // The pot colour eases toward `color` in useFrame; JSX only sets the start.
+  const [initialColor] = useState(color)
   const targetColor = useMemo(() => new THREE.Color(color), [color])
-  const ghostPlant = useMemo(() => new THREE.Color('#33443b'), [])
-  const ghostRoot = useMemo(() => new THREE.Color('#e6eef7'), [])
 
   useFrame((_, dt) => {
     const a = anim.current
@@ -101,25 +100,33 @@ export function Vessel({ radius, height, color, anim }: Props) {
     const { r, h } = size.current
     group.current.scale.set(r, h, r)
 
-    mats.pot.color.lerp(targetColor, k)
-    mats.pot.opacity = a.pot
-    mats.pot.depthWrite = a.pot > 0.98
-    mats.pot.visible = a.pot > 0.005
+    const pot = potMat.current
+    if (pot) {
+      pot.color.lerp(targetColor, k)
+      pot.opacity = a.pot
+      pot.depthWrite = a.pot > 0.98
+      pot.visible = a.pot > 0.005
+    }
 
-    const ghostUniforms = (mats.ghost as THREE.ShaderMaterial).uniforms
-    ghostUniforms.uOpacity.value = a.ghost
-    ghostUniforms.uColor.value.copy(ghostPlant).lerp(ghostRoot, a.reveal)
-    mats.ghost.visible = a.ghost > 0.005
+    const ghost = ghostMesh.current?.material as THREE.ShaderMaterial | undefined
+    if (ghost) {
+      ghost.uniforms.uOpacity.value = a.ghost
+      ghost.uniforms.uColor.value.copy(GHOST_PLANT).lerp(GHOST_ROOT, a.reveal)
+      ghost.visible = a.ghost > 0.005
+    }
 
-    for (const m of [mats.soilSide, mats.soilTop]) {
+    for (const m of [soilSide.current, soilTop.current, soilBottom.current]) {
+      if (!m) continue
       m.opacity = a.soil
       m.depthWrite = a.soil > 0.98
+      m.visible = a.soil > 0.01
     }
-    mats.soilSide.visible = a.soil > 0.01
-    mats.stipple.opacity = a.stipple
-    mats.stipple.color.set(a.reveal > 0.5 ? '#dfe7ef' : '#4a3a2c')
-    mats.stipple.visible = a.stipple > 0.01
-    mats.shadow.opacity = a.shadow
+    if (stipple.current) {
+      stipple.current.opacity = a.stipple
+      stipple.current.color.copy(a.reveal > 0.5 ? STIPPLE_ROOT : STIPPLE_SOIL)
+      stipple.current.visible = a.stipple > 0.01
+    }
+    if (shadowMat.current) shadowMat.current.opacity = a.shadow
 
     if (shadow.current) {
       shadow.current.position.y = -h - 0.001
@@ -130,13 +137,22 @@ export function Vessel({ radius, height, color, anim }: Props) {
   return (
     <>
       <group ref={group}>
-        <mesh geometry={potGeometry} material={mats.pot} castShadow receiveShadow renderOrder={2} />
-        <mesh geometry={potGeometry} material={mats.ghost} renderOrder={4} />
-        <mesh geometry={soil} material={[mats.soilSide, mats.soilTop, mats.soilSide]} userData={{ region: 'soil' }} receiveShadow renderOrder={1} />
-        <points geometry={stippleGeometry} material={mats.stipple} renderOrder={3} />
+        <mesh geometry={potGeometry} castShadow receiveShadow renderOrder={2}>
+          <meshStandardMaterial ref={potMat} color={initialColor} map={textures.pot} roughness={0.86} transparent />
+        </mesh>
+        <mesh ref={ghostMesh} geometry={potGeometry} material={ghostMaterial} renderOrder={4} />
+        <mesh geometry={soil} userData={{ region: 'soil' }} receiveShadow renderOrder={1}>
+          <meshStandardMaterial ref={soilSide} attach="material-0" color="#3a2b1f" roughness={1} transparent />
+          <meshStandardMaterial ref={soilTop} attach="material-1" map={textures.soil} roughness={1} transparent />
+          <meshStandardMaterial ref={soilBottom} attach="material-2" color="#3a2b1f" roughness={1} transparent />
+        </mesh>
+        <points geometry={stippleGeometry} renderOrder={3}>
+          <pointsMaterial ref={stipple} color={STIPPLE_ROOT} size={0.0032} transparent depthWrite={false} opacity={0} />
+        </points>
       </group>
-      <mesh ref={shadow} rotation-x={-Math.PI / 2} material={mats.shadow}>
+      <mesh ref={shadow} rotation-x={-Math.PI / 2}>
         <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial ref={shadowMat} map={textures.shadow} transparent depthWrite={false} />
       </mesh>
     </>
   )

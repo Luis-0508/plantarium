@@ -12,9 +12,17 @@ interface RootContext {
   origins: THREE.Vector3[]
 }
 
+const TIP_WHITE = new THREE.Color('#fbf8ee')
+/** Per-step gravitropic pull on the growth direction. */
+const GRAVITY = 0.06
+/** How quickly the wandering tendency changes (0 = never, 1 = every step). */
+const WANDER_CHANGE = 0.3
+
 /**
  * Grows a root system as constrained random walks: gravitropism pulls roots
- * down, the pot wall deflects them into circling paths, the floor flattens them.
+ * down, a slowly changing wander keeps paths smooth, the pot wall deflects
+ * them into circling paths and the floor flattens them. Depth and spread are
+ * capped by the profile so the root-view measurements match the geometry.
  */
 export function generateRoots(ctx: RootContext): THREE.BufferGeometry {
   const { rng, potHeight: H, potRadius: R, profile, origins } = ctx
@@ -26,7 +34,9 @@ export function generateRoots(ctx: RootContext): THREE.BufferGeometry {
   const spread = profile.spreadCm / 100
 
   const base = new THREE.Color(m.color)
-  const tip = base.clone().lerp(new THREE.Color('#fbf8ee'), 0.55)
+  const tip = base.clone().lerp(TIP_WHITE, 0.55)
+  // Fleshy roots bend in broad curves; fibrous roots wander more.
+  const wander = m.tubers ? 0.14 : 0.22
   const dark = base.clone().multiplyScalar(0.72)
 
   const walk = (start: THREE.Vector3, dir: THREE.Vector3, length: number, steps: number, depthY: number, margin: number) => {
@@ -34,11 +44,13 @@ export function generateRoots(ctx: RootContext): THREE.BufferGeometry {
     const p = start.clone()
     const d = dir.clone().normalize()
     const step = length / steps
-    const jitter = new THREE.Vector3()
+    const turn = new THREE.Vector3()
+    const target = new THREE.Vector3()
     for (let s = 0; s < steps; s++) {
-      d.y -= 0.06
-      jitter.set(rng.range(-1, 1), rng.range(-0.6, 0.6), rng.range(-1, 1)).multiplyScalar(0.28)
-      d.add(jitter).normalize()
+      target.set(rng.range(-1, 1), rng.range(-0.6, 0.6), rng.range(-1, 1))
+      turn.lerp(target, WANDER_CHANGE)
+      d.y -= GRAVITY
+      d.addScaledVector(turn, wander).normalize()
       p.addScaledVector(d, step)
 
       if (p.y > soilY - margin) {
@@ -49,7 +61,7 @@ export function generateRoots(ctx: RootContext): THREE.BufferGeometry {
         p.y = depthY + margin + rng.range(0, 0.004)
         d.y = Math.abs(d.y) * 0.05
       }
-      const limit = Math.min(innerRadiusAt(p.y, H, R) - margin, spread + rng.range(-0.01, 0.015))
+      const limit = Math.min(innerRadiusAt(p.y, H, R) - margin, spread * rng.range(0.93, 1))
       const r = Math.hypot(p.x, p.z)
       if (r > limit) {
         const k = limit / r
@@ -58,8 +70,9 @@ export function generateRoots(ctx: RootContext): THREE.BufferGeometry {
         // Deflect along the wall: roots in pots circle and descend.
         const tangentX = -p.z / limit
         const tangentZ = p.x / limit
-        const turn = d.x * tangentX + d.z * tangentZ >= 0 ? 1 : -1
-        d.set(tangentX * turn, d.y - 0.25, tangentZ * turn).normalize()
+        const dirSign = d.x * tangentX + d.z * tangentZ >= 0 ? 1 : -1
+        target.set(tangentX * dirSign, d.y - 0.25, tangentZ * dirSign).normalize()
+        d.lerp(target, 0.75).normalize()
       }
       pts.push(p.clone())
     }
@@ -80,7 +93,7 @@ export function generateRoots(ctx: RootContext): THREE.BufferGeometry {
     const depthY = Math.max(floorY, soilY - (soilY - maxDepthY) * rng.range(0.75, 1.02))
     const length = (soilY - depthY) * rng.range(1.3, 2.2)
     const bulges = m.tubers
-      ? Array.from({ length: rng.int(1, 2) }, () => ({ at: rng.range(0.35, 0.85), size: rng.range(0.7, 1.4), w: rng.range(0.06, 0.11) }))
+      ? Array.from({ length: rng.int(1, 3) }, () => ({ at: rng.range(0.3, 0.88), size: rng.range(0.6, 1.3), w: rng.range(0.06, 0.12) }))
       : []
     const thickness = m.thickness * rng.range(0.75, 1.2)
     // Keep the whole tube, including tuber swellings, inside the pot wall.

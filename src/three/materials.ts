@@ -7,11 +7,12 @@ export const windUniforms = {
 }
 
 /**
- * Adds a gentle, height-weighted sway. Displacement is a continuous function
- * of position, so attached parts (rachis and leaflets) move together.
+ * Shader hooks for foliage, passed as material props: a gentle,
+ * height-weighted sway (a continuous function of position, so attached parts
+ * like rachis and leaflets move together) plus cheap back-face translucency.
  */
-export function withWind<T extends THREE.Material>(material: T, height: number): T {
-  material.onBeforeCompile = (shader) => {
+export function foliageShader(height: number) {
+  const onBeforeCompile = (shader: THREE.WebGLProgramParametersWithUniforms) => {
     shader.uniforms.uTime = windUniforms.uTime
     shader.uniforms.uWind = windUniforms.uWind
     shader.uniforms.uWindHeight = { value: height }
@@ -26,9 +27,14 @@ export function withWind<T extends THREE.Material>(material: T, height: number):
         transformed.z += cos(uTime * 0.75 + position.x * 2.5) * sway * 0.8;
         transformed.y += sin(uTime * 1.6 + position.x * 8.0) * sway * 0.25;`,
       )
+    // Cheap translucency: back faces of thin leaves pick up some of their own
+    // colour instead of going nearly black, as light would pass through them.
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <emissivemap_fragment>',
+      '#include <emissivemap_fragment>\n  if (!gl_FrontFacing) totalEmissiveRadiance += diffuseColor.rgb * 0.16;',
+    )
   }
-  material.customProgramCacheKey = () => `wind-${height.toFixed(3)}`
-  return material
+  return { onBeforeCompile, customProgramCacheKey: () => `foliage-${height.toFixed(3)}` }
 }
 
 /** View-dependent rim glow: reads like a glass vitrine or an X-ray outline. */
@@ -99,6 +105,38 @@ export function createSoilTexture() {
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
   texture.anisotropy = 4
+  return texture
+}
+
+/**
+ * Stoneware finish for the pot: near-white so the material colour shows
+ * through, with fine iron speckle and faint throwing rings (v runs along the
+ * lathe profile).
+ */
+export function createPotTexture() {
+  const size = 256
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = size
+  const ctx = canvas.getContext('2d')!
+  ctx.fillStyle = '#f4f2ee'
+  ctx.fillRect(0, 0, size, size)
+  let seed = 29
+  const rnd = () => {
+    seed = (seed * 16807) % 2147483647
+    return seed / 2147483647
+  }
+  for (let y = 0; y < size; y += 3) {
+    ctx.fillStyle = `rgba(90, 80, 70, ${0.02 + rnd() * 0.035})`
+    ctx.fillRect(0, y, size, 1)
+  }
+  for (let i = 0; i < 900; i++) {
+    ctx.fillStyle = `rgba(70, 58, 48, ${0.15 + rnd() * 0.35})`
+    ctx.fillRect(rnd() * size, rnd() * size, 1 + rnd() * 1.2, 1 + rnd() * 1.2)
+  }
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.wrapS = THREE.RepeatWrapping
+  texture.repeat.set(3, 1)
   return texture
 }
 

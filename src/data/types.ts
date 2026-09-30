@@ -28,13 +28,19 @@ export interface AnatomyNote {
   anchor: [number, number, number]
 }
 
+export interface ProceduralModelRef {
+  kind: 'procedural'
+  generator: 'rosette' | 'palm'
+  params: ProceduralParams
+  seed: number
+}
+
 /**
  * Reference to the 3D representation. `procedural` uses a built-in generator;
- * `gltf` is reserved for scanned/modelled assets loaded from `public/models`.
+ * `gltf` loads a modelled asset from `public/models` (see README) and falls
+ * back to `fallback` while loading or if the file cannot be loaded.
  */
-export type ModelRef =
-  | { kind: 'procedural'; generator: 'rosette' | 'palm'; params: ProceduralParams; seed: number }
-  | { kind: 'gltf'; url: string; rootsUrl?: string }
+export type ModelRef = ProceduralModelRef | { kind: 'gltf'; url: string; rootsUrl?: string; fallback?: ProceduralModelRef }
 
 export type ProceduralParams = RosetteParams | PalmParams
 
@@ -60,7 +66,21 @@ export interface PalmParams {
   leafletWidth: number
   /** 0 = upright, 1 = strongly arching. */
   arch: number
+  /** Gravity bend of individual leaflets. */
+  leafletDroop: number
+  /** Vertical distance between successive frond insertions on a cane (m). */
+  frondSpacing: number
+  /** Short basal shoots emerging from the clump. */
+  suckers: number
+  /** 0 = regular leaflets, 1 = strongly irregular spacing, length and angle. */
+  irregularity: number
+  /** Roll of the leaflet plane toward the frond tip (radians). */
+  rachisTwist: number
+  /** How much older fronds shift toward yellow-green. */
+  ageYellowing: number
   stemColor: string
+  /** Cane colour toward the crown; defaults to `stemColor`. */
+  stemTopColor?: string
   leafColor: string
   rachisColor: string
   /** Visible leaf-scar rings on canes. */
@@ -110,6 +130,11 @@ export interface Plant {
   summary: string
   /** Identifying colour in comparisons and legends. */
   swatch: string
+  /**
+   * Provenance of care, size and root values. `placeholder`: typical values
+   * compiled from general care guides, not yet reviewed by a botanist.
+   */
+  dataQuality: 'placeholder' | 'reviewed'
 
   care: {
     /** 0 = deep shade, 1 = direct sun. */

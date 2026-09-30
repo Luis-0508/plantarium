@@ -48,18 +48,46 @@ export function buildProceduralGeometry(plant: Plant): PlantGeometry {
   return geometry
 }
 
-/** Extent of the shoot above the pot, for camera framing. */
-export function plantBounds(plant: Plant): { top: number; radius: number } {
+export interface ShootBounds {
+  /** Height reached by all but the highest 0.5 % of shoot vertices. */
+  top: number
+  /** Horizontal radius containing 85 % of shoot vertices: the visual body. */
+  body: number
+  /** Outermost leaf tip or runner. */
+  reach: number
+}
+
+const boundsCache = new Map<string, ShootBounds>()
+
+/**
+ * Robust shoot extent for camera framing. Percentiles keep a single long
+ * runner or frond tip from forcing the camera far away.
+ */
+export function plantBounds(plant: Plant): ShootBounds {
+  const cached = boundsCache.get(plant.id)
+  if (cached) return cached
+  let bounds: ShootBounds
   if (plant.model.kind !== 'procedural') {
-    return { top: plant.dimensions.specimenHeight, radius: plant.dimensions.maxSpreadCm / 200 }
+    const r = plant.dimensions.maxSpreadCm / 200
+    bounds = { top: plant.dimensions.specimenHeight, body: r * 0.75, reach: r }
+  } else {
+    const g = buildProceduralGeometry(plant)
+    const heights: number[] = []
+    const radii: number[] = []
+    for (const geo of [g.leaves, g.stems, g.crown]) {
+      const pos = geo.getAttribute('position')
+      for (let i = 0; i < pos.count; i += 2) {
+        heights.push(pos.getY(i))
+        radii.push(Math.hypot(pos.getX(i), pos.getZ(i)))
+      }
+    }
+    heights.sort((a, b) => a - b)
+    radii.sort((a, b) => a - b)
+    const pct = (arr: number[], q: number) => arr[Math.min(arr.length - 1, Math.floor(arr.length * q))]
+    bounds = { top: pct(heights, 0.995), body: pct(radii, 0.85), reach: radii[radii.length - 1] }
   }
-  const g = buildProceduralGeometry(plant)
-  const box = new THREE.Box3()
-  for (const geo of [g.leaves, g.stems, g.crown]) {
-    geo.computeBoundingBox()
-    if (geo.boundingBox) box.union(geo.boundingBox)
-  }
-  return { top: box.max.y, radius: Math.max(-box.min.x, box.max.x, -box.min.z, box.max.z) }
+  boundsCache.set(plant.id, bounds)
+  return bounds
 }
 
 const REGION_GEOMETRY: Partial<Record<AnatomyRegion, keyof PlantGeometry>> = {
@@ -90,4 +118,20 @@ export function snapAnchor(plant: Plant, region: AnatomyRegion, hint: [number, n
     }
   }
   return out
+}
+
+/**
+ * Measured rooting depth below the soil surface and maximum lateral spread of
+ * the rendered roots (metres). Undefined for non-procedural models.
+ */
+export function rootExtent(plant: Plant): { depth: number; spread: number } | undefined {
+  if (plant.model.kind !== 'procedural') return undefined
+  const pos = buildProceduralGeometry(plant).roots.getAttribute('position')
+  let minY = Infinity
+  let spread = 0
+  for (let i = 0; i < pos.count; i++) {
+    minY = Math.min(minY, pos.getY(i))
+    spread = Math.max(spread, Math.hypot(pos.getX(i), pos.getZ(i)))
+  }
+  return { depth: soilLevel(plant.pot.height) - minY, spread }
 }

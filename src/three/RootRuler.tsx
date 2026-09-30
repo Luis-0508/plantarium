@@ -4,6 +4,7 @@ import { useMemo, useRef, type ComponentProps, type ComponentRef, type RefObject
 import * as THREE from 'three'
 import type { Plant } from '../data/types'
 import type { StageAnim } from '../viewTypes'
+import { rootExtent } from './models/registry'
 import { rulerLayout } from './rulerLayout'
 import { ScreenAnchors } from './ScreenAnchors'
 
@@ -28,7 +29,7 @@ const INK = '#eef3f8'
  */
 export function RootRuler({ plant, anim }: { plant: Plant; anim: RefObject<StageAnim> }) {
   const frame = useRef<THREE.Group>(null)
-  const layout = useMemo(() => rulerLayout(plant), [plant])
+  const layout = useMemo(() => rulerLayout(plant, rootExtent(plant)), [plant])
   const { H, soilY, depthY, spread, x } = layout
 
   const ticks = useMemo(() => {

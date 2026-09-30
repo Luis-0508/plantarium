@@ -1,3 +1,4 @@
+import { useRef, type KeyboardEvent } from 'react'
 import type { AnatomyRegion, Plant } from '../data/types'
 import type { PotOption, SoilOption, ViewMode } from '../viewTypes'
 import { CloseIcon, CollapseIcon, ExpandIcon, MinusIcon, PlusIcon, ResetIcon } from './icons'
@@ -9,17 +10,33 @@ const MODES: { id: ViewMode; label: string; hint: string }[] = [
   { id: 'anatomy', label: 'Anatomie', hint: 'Teile der Pflanze erklärt' },
 ]
 
+/** ARIA radio group: arrow keys move between views, Tab leaves the group. */
 export function ModeSwitch({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode) => void }) {
   const index = MODES.findIndex((m) => m.id === mode)
+  const buttons = useRef<(HTMLButtonElement | null)[]>([])
+
+  const onKeyDown = (e: KeyboardEvent) => {
+    const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0
+    if (!step) return
+    e.preventDefault()
+    const next = (index + step + MODES.length) % MODES.length
+    onChange(MODES[next].id)
+    buttons.current[next]?.focus()
+  }
+
   return (
-    <div className="modes" role="radiogroup" aria-label="Ansicht">
+    <div className="modes" role="radiogroup" aria-label="Ansicht" onKeyDown={onKeyDown}>
       <span className="modes__thumb" style={{ transform: `translateX(${index * 100}%)` }} aria-hidden />
       {MODES.map((m, i) => (
         <button
           key={m.id}
+          ref={(el) => {
+            buttons.current[i] = el
+          }}
           type="button"
           role="radio"
           aria-checked={mode === m.id}
+          tabIndex={mode === m.id ? 0 : -1}
           className={mode === m.id ? 'is-active' : ''}
           onClick={() => onChange(m.id)}
           title={`${m.hint} (Taste ${i + 1})`}
@@ -39,7 +56,7 @@ export function PlantSelector({ plants, activeId, onSelect }: { plants: Plant[];
           key={p.id}
           type="button"
           className={p.id === activeId ? 'selector__item is-active' : 'selector__item'}
-          aria-current={p.id === activeId}
+          aria-pressed={p.id === activeId}
           onClick={() => onSelect(p.id)}
         >
           <PlantGlyph plant={p} className="selector__glyph" />
@@ -57,7 +74,8 @@ interface ToolsProps {
   onZoomIn: () => void
   onZoomOut: () => void
   onReset: () => void
-  onFullscreen: () => void
+  /** Omitted when the browser cannot put an element into fullscreen (e.g. iOS Safari). */
+  onFullscreen?: () => void
   fullscreen: boolean
 }
 
@@ -73,9 +91,11 @@ export function CameraTools({ onZoomIn, onZoomOut, onReset, onFullscreen, fullsc
       <button type="button" onClick={onReset} aria-label="Kamera zurücksetzen" title="Kamera zurücksetzen (R)">
         <ResetIcon />
       </button>
-      <button type="button" onClick={onFullscreen} aria-label={fullscreen ? 'Vollbild beenden' : 'Vollbild'} title={fullscreen ? 'Vollbild beenden' : 'Vollbild'}>
-        {fullscreen ? <CollapseIcon /> : <ExpandIcon />}
-      </button>
+      {onFullscreen && (
+        <button type="button" onClick={onFullscreen} aria-label={fullscreen ? 'Vollbild beenden' : 'Vollbild'} title={fullscreen ? 'Vollbild beenden' : 'Vollbild'}>
+          {fullscreen ? <CollapseIcon /> : <ExpandIcon />}
+        </button>
+      )}
     </div>
   )
 }
@@ -83,26 +103,28 @@ export function CameraTools({ onZoomIn, onZoomOut, onReset, onFullscreen, fullsc
 const POT_LABEL: Record<PotOption, string> = { solid: 'sichtbar', ghost: 'durchsichtig', hidden: 'aus' }
 const NEXT_POT: Record<PotOption, PotOption> = { solid: 'ghost', ghost: 'hidden', hidden: 'solid' }
 
-/** Pot and soil visibility; only meaningful in the plant view. */
+/** Pot and soil visibility; shown in the plant view only. */
 export function VesselToggles({
   pot,
   soil,
   onPot,
   onSoil,
-  disabled,
 }: {
   pot: PotOption
   soil: SoilOption
   onPot: (p: PotOption) => void
   onSoil: (s: SoilOption) => void
-  disabled: boolean
 }) {
   return (
     <div className="vessel" aria-label="Topf und Erde">
-      <button type="button" disabled={disabled} onClick={() => onPot(NEXT_POT[pot])}>
+      <button type="button" onClick={() => onPot(NEXT_POT[pot])} aria-label={`Topf: ${POT_LABEL[pot]}. Umschalten auf ${POT_LABEL[NEXT_POT[pot]]}`}>
         Topf <em>{POT_LABEL[pot]}</em>
       </button>
-      <button type="button" disabled={disabled} onClick={() => onSoil(soil === 'solid' ? 'transparent' : 'solid')}>
+      <button
+        type="button"
+        onClick={() => onSoil(soil === 'solid' ? 'transparent' : 'solid')}
+        aria-label={`Erde: ${soil === 'solid' ? 'sichtbar' : 'durchsichtig'}. Umschalten`}
+      >
         Erde <em>{soil === 'solid' ? 'sichtbar' : 'durchsichtig'}</em>
       </button>
     </div>

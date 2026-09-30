@@ -30,9 +30,12 @@ export function InfoPanel({ plant, mode }: { plant: Plant; mode: ViewMode }) {
   const rootsRef = useRef<HTMLElement>(null)
   const scroller = useRef<HTMLDivElement>(null)
 
+  // Only scroll the panel's own column (desktop). On narrow layouts the page
+  // itself scrolls, and moving it would take the 3D stage out of view.
   useEffect(() => {
-    if (mode === 'roots') rootsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    else scroller.current?.scrollTo({ top: 0, behavior: 'smooth' })
+    const el = scroller.current
+    if (!el || el.scrollHeight <= el.clientHeight) return
+    el.scrollTo({ top: mode === 'roots' ? (rootsRef.current?.offsetTop ?? 0) : 0, behavior: 'smooth' })
   }, [mode, plant.id])
 
   const waterDrops = Math.round(care.water.ideal * 5 * 2) / 2
@@ -165,6 +168,10 @@ export function InfoPanel({ plant, mode }: { plant: Plant; mode: ViewMode }) {
             <div><dt>Topftiefe</dt><dd className="num">{range(roots.recommendedPotDepthCm.min, roots.recommendedPotDepthCm.max, ' cm')}</dd></div>
           </dl>
         </section>
+
+        {plant.dataQuality === 'placeholder' && (
+          <p className="panel__note">Richtwerte aus allgemeinen Pflegequellen, noch nicht fachlich geprüft.</p>
+        )}
       </div>
     </aside>
   )

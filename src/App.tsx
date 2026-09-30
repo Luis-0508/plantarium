@@ -54,7 +54,7 @@ export default function App() {
     setPlantId(id)
     setSelectedRegion(null)
     setPage('explore')
-  }, [])
+  }, [setPage])
 
   const changeMode = useCallback((m: ViewMode) => {
     setMode(m)
@@ -65,8 +65,9 @@ export default function App() {
   const camera = useCallback((type: CameraCommand['type']) => setCommand({ type, id: Date.now() }), [])
 
   const toggleFullscreen = useCallback(() => {
-    if (document.fullscreenElement) document.exitFullscreen()
-    else stageRef.current?.requestFullscreen?.()
+    // Requests can be refused (embedded frames, missing user gesture); the button simply does nothing then.
+    const request = document.fullscreenElement ? document.exitFullscreen() : stageRef.current?.requestFullscreen()
+    request?.catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -137,6 +138,9 @@ export default function App() {
               <h1>{plant.commonName}</h1>
               <p className="stage__botanical">{plant.botanicalName}</p>
               <p className="stage__english">{plant.englishName}</p>
+              {mode === 'roots' && (
+                <p className="stage__caption">Topf und Substrat sind ausgeblendet. Maße gelten für eine Pflanze im empfohlenen Topf.</p>
+              )}
             </div>
 
             <div className="stage__modes">
@@ -148,7 +152,7 @@ export default function App() {
                 onZoomIn={() => camera('zoom-in')}
                 onZoomOut={() => camera('zoom-out')}
                 onReset={() => camera('reset')}
-                onFullscreen={toggleFullscreen}
+                onFullscreen={document.fullscreenEnabled ? toggleFullscreen : undefined}
                 fullscreen={fullscreen}
               />
             </div>
@@ -159,18 +163,16 @@ export default function App() {
               </div>
             )}
 
-            {mode === 'roots' && (
-              <p className="stage__caption">
-                Topf und Substrat sind ausgeblendet. Maße gelten für eine Pflanze im empfohlenen Topf.
-              </p>
-            )}
 
             <div className="stage__footer">
               <PlantSelector plants={plants} activeId={plant.id} onSelect={selectPlant} />
-              {mode === 'plant' && (
-                <VesselToggles pot={potOption} soil={soilOption} onPot={setPotOption} onSoil={setSoilOption} disabled={mode !== 'plant'} />
-              )}
             </div>
+
+            {mode === 'plant' && (
+              <div className="stage__vessel">
+                <VesselToggles pot={potOption} soil={soilOption} onPot={setPotOption} onSoil={setSoilOption} />
+              </div>
+            )}
           </div>
 
           <InfoPanel plant={plant} mode={mode} />

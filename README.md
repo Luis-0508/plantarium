@@ -57,17 +57,36 @@ src/
 ## Adding a plant
 
 1. Add a `Plant` entry to `src/data/plants.ts`. All UI reads from this entry.
+   Set `dataQuality: 'placeholder'` until the values have been reviewed; the
+   specimen sheet then shows a short note.
 2. Choose a model:
    - **Procedural**: set `model.kind: 'procedural'` with `generator: 'rosette'`
      or `'palm'` and tune `params`. For a new growth form, add a generator in
      `src/three/models/` that returns `leaves`, `stems`, `crown` and
      `rootOrigins`, and dispatch it in `registry.ts`.
-   - **GLTF/GLB**: place the file in `public/models/` and set
-     `model: { kind: 'gltf', url: '/models/name.glb', rootsUrl?: '...' }`.
-     Name meshes with `leaf_`, `stem_`, `crown_` or `root_` prefixes so anatomy
-     picking works. Model space: metres, pot rim at `y = 0`.
+   - **GLB/GLTF**: see below.
 3. Anatomy `anchor` values are hints; for procedural models they snap to the
    nearest vertex of the matching region.
 
-Care values are typical indoor recommendations compiled from horticultural
-references and are meant as placeholder data.
+## GLB models (prepared, not yet exercised)
+
+The loading path exists but has not been tested with a real asset.
+
+- Files: `public/models/<plant-id>.glb` for the shoot and optionally
+  `public/models/<plant-id>-roots.glb` for the roots.
+- Data: `model: { kind: 'gltf', url: '/models/<plant-id>.glb', rootsUrl: '/models/<plant-id>-roots.glb', fallback: { kind: 'procedural', ... } }`.
+  The optional `fallback` is shown while the file loads and if it fails to
+  load (an error boundary catches the failure and logs a warning).
+- Scale and origin: metres, Y up, pot rim centre at the origin, soil surface
+  just below `y = 0`. The pot and soil are drawn by the app; do not include them.
+- Mesh names map to anatomy regions: `leaf_*`/`frond_*`, `stem_*`/`cane_*`,
+  `crown_*`/`sheath_*`, `root_*`.
+- Not yet supported for GLB: root-view glow, foliage fading and wind, measured
+  ruler positions and hotspot snapping (hotspots use the raw anchors, framing
+  uses `dimensions`).
+
+## Data status
+
+Care, size and root values are typical indoor recommendations compiled from
+general horticultural references. They have not been reviewed and are marked
+`dataQuality: 'placeholder'`.

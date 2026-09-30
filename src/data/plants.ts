@@ -1,9 +1,10 @@
 import type { Plant } from './types'
 
 /*
- * Care values are typical indoor recommendations compiled from horticultural
- * references (RHS, ASPCA toxicity list, University extension sheets). They are
- * placeholder-quality: good for orientation, not a substitute for local advice.
+ * UNVERIFIED DATA: care, size and root values are typical indoor
+ * recommendations compiled from general horticultural references and have not
+ * been reviewed. Each plant carries `dataQuality: 'placeholder'` until checked;
+ * the UI shows a note for such entries. Do not treat them as authoritative.
  */
 
 const spiderPlant: Plant = {
@@ -12,6 +13,7 @@ const spiderPlant: Plant = {
   englishName: 'Spider Plant',
   botanicalName: 'Chlorophytum comosum',
   swatch: '#7f9c3c',
+  dataQuality: 'placeholder',
   family: 'Spargelgewächse (Asparagaceae)',
   origin: 'Tropisches und südliches Afrika',
   summary:
@@ -50,7 +52,7 @@ const spiderPlant: Plant = {
     schedule: { fertilize: [4, 5, 6, 7, 8, 9], repot: [3, 4] },
   },
   dimensions: { maxIndoorHeightCm: { min: 30, max: 45 }, maxSpreadCm: 60, specimenHeight: 0.34 },
-  pot: { height: 0.15, radius: 0.095, color: '#b9b2a4' },
+  pot: { height: 0.16, radius: 0.095, color: '#b9b2a4' },
   roots: {
     structure: 'tuberous',
     structureLabel: 'Fleischige Speicherwurzeln',
@@ -109,6 +111,7 @@ const arecaPalm: Plant = {
   englishName: 'Areca Palm',
   botanicalName: 'Dypsis lutescens',
   swatch: '#b08a22',
+  dataQuality: 'placeholder',
   family: 'Palmengewächse (Arecaceae)',
   origin: 'Ostmadagaskar',
   summary:
@@ -142,7 +145,7 @@ const arecaPalm: Plant = {
     schedule: { fertilize: [3, 4, 5, 6, 7, 8, 9], repot: [4, 5] },
   },
   dimensions: { maxIndoorHeightCm: { min: 180, max: 250 }, maxSpreadCm: 120, specimenHeight: 1.25 },
-  pot: { height: 0.3, radius: 0.19, color: '#a9a497' },
+  pot: { height: 0.34, radius: 0.19, color: '#a9a497' },
   roots: {
     structure: 'clumping-fibrous',
     structureLabel: 'Horstiges Faserwurzelwerk',
@@ -153,7 +156,7 @@ const arecaPalm: Plant = {
     density: 4,
     waterloggingSensitivity: 5,
     recommendedPotDepthCm: { min: 30, max: 40 },
-    model: { primaryCount: 44, thickness: 0.0034, branching: 0.8, tubers: false, color: '#d9c7a4' },
+    model: { primaryCount: 64, thickness: 0.0021, branching: 0.95, tubers: false, color: '#d9c7a4' },
   },
   anatomy: [
     {
@@ -193,18 +196,25 @@ const arecaPalm: Plant = {
     seed: 21,
     params: {
       type: 'palm',
-      stems: 7,
-      stemHeight: [0.3, 0.7],
-      stemRadius: 0.013,
+      stems: 8,
+      stemHeight: [0.32, 0.8],
+      stemRadius: 0.0105,
       frondsPerStem: [2, 4],
-      frondLength: [0.55, 0.8],
-      leafletsPerSide: 36,
-      leafletLength: 0.25,
-      leafletWidth: 0.0075,
+      frondLength: [0.55, 0.85],
+      leafletsPerSide: 40,
+      leafletLength: 0.24,
+      leafletWidth: 0.0068,
       arch: 1,
-      stemColor: '#b8a954',
+      leafletDroop: 1.05,
+      frondSpacing: 0.06,
+      suckers: 2,
+      irregularity: 0.7,
+      rachisTwist: 0.8,
+      ageYellowing: 0.3,
+      stemColor: '#b3a24c',
+      stemTopColor: '#9fae4f',
       leafColor: '#5f8f34',
-      rachisColor: '#c7b457',
+      rachisColor: '#c9b552',
       rings: true,
     },
   },
@@ -216,6 +226,7 @@ const parlorPalm: Plant = {
   englishName: 'Parlor Palm',
   botanicalName: 'Chamaedorea elegans',
   swatch: '#2c5b3f',
+  dataQuality: 'placeholder',
   family: 'Palmengewächse (Arecaceae)',
   origin: 'Regenwald-Unterholz in Mexiko und Guatemala',
   summary:
@@ -260,7 +271,7 @@ const parlorPalm: Plant = {
     density: 3,
     waterloggingSensitivity: 4,
     recommendedPotDepthCm: { min: 20, max: 25 },
-    model: { primaryCount: 30, thickness: 0.0026, branching: 0.9, tubers: false, color: '#c9b08a' },
+    model: { primaryCount: 46, thickness: 0.0015, branching: 0.85, tubers: false, color: '#c9b08a' },
   },
   anatomy: [
     {
@@ -309,6 +320,12 @@ const parlorPalm: Plant = {
       leafletLength: 0.15,
       leafletWidth: 0.0105,
       arch: 0.55,
+      leafletDroop: 0.62,
+      frondSpacing: 0.025,
+      suckers: 0,
+      irregularity: 0.3,
+      rachisTwist: 0.15,
+      ageYellowing: 0.06,
       stemColor: '#5d7a3a',
       leafColor: '#46783a',
       rachisColor: '#557a34',

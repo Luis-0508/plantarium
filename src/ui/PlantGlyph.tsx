@@ -45,25 +45,34 @@ function glyphPaths(plant: Plant) {
       const tx = bx + (f - 0.5) * 16
       const ty = baseY - h
       paths.push({ d: `M${bx.toFixed(1)} ${baseY}Q${bx.toFixed(1)} ${(baseY - h * 0.6).toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)}`, w: 1.6 })
-      const fronds = 2
+      // Fronds at staggered heights along the upper cane, varied in length
+      // and direction, like the 3D model; arching palms hang their leaflets.
+      const fronds = p.frondSpacing > 0.04 ? 3 : 2
+      const hanging = p.leafletDroop > 0.8
       for (let k = 0; k < fronds; k++) {
-        const dir = k === 0 ? (f < 0.5 ? -1 : 1) : f < 0.5 ? 1 : -1
-        const L = p.frondLength[1] * heightScale * rng.range(0.7, 0.95)
-        const lift = L * (0.85 - p.arch * 0.45)
-        const ex = tx + dir * L * (0.38 + p.arch * 0.22)
-        const ey = ty - lift + L * p.arch * 0.55
-        const cx = tx + dir * L * 0.3
-        const cy = ty - lift * 1.1
-        paths.push({ d: `M${tx.toFixed(1)} ${ty.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}`, w: 1.2 })
+        const oy = ty + k * h * 0.14
+        const ox = tx - (tx - bx) * k * 0.14
+        const dir = (k + s) % 2 === 0 ? (f < 0.5 ? -1 : 1) : f < 0.5 ? 1 : -1
+        const L = p.frondLength[1] * heightScale * rng.range(0.62, 0.95) * (1 - k * 0.1)
+        const lift = L * (0.85 - p.arch * 0.45) * (1 - k * 0.25) * rng.range(0.8, 1.15)
+        const ex = ox + dir * L * (0.38 + p.arch * 0.22) * rng.range(0.85, 1.1) * (hanging ? 0.78 : 1)
+        const ey = oy - lift + L * p.arch * 0.55 * (1 + k * 0.2)
+        const cx = ox + dir * L * 0.3
+        const cy = oy - lift * 1.1
+        paths.push({ d: `M${ox.toFixed(1)} ${oy.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}`, w: 1.2 })
         const leaflets = Math.max(5, Math.round(p.leafletsPerSide / 3))
         for (let i = 1; i <= leaflets; i++) {
-          const t = i / (leaflets + 1)
-          const qx = (1 - t) ** 2 * tx + 2 * (1 - t) * t * cx + t * t * ex
-          const qy = (1 - t) ** 2 * ty + 2 * (1 - t) * t * cy + t * t * ey
-          const len = p.leafletLength * heightScale * 0.4 * Math.sin(Math.PI * (0.2 + 0.8 * t))
-          const droop = 0.5 + p.arch * 0.6
-          paths.push({ d: `M${qx.toFixed(1)} ${qy.toFixed(1)}l${(dir * len * 0.45).toFixed(1)} ${(len * droop).toFixed(1)}`, w: 1.1 })
-          paths.push({ d: `M${qx.toFixed(1)} ${qy.toFixed(1)}l${(dir * len * 0.2).toFixed(1)} ${(-len * (0.7 - p.arch * 0.3)).toFixed(1)}`, w: 1.1 })
+          const t = (i + rng.range(-0.3, 0.3) * p.irregularity) / (leaflets + 1)
+          const qx = (1 - t) ** 2 * ox + 2 * (1 - t) * t * cx + t * t * ex
+          const qy = (1 - t) ** 2 * oy + 2 * (1 - t) * t * cy + t * t * ey
+          const len = p.leafletLength * heightScale * 0.4 * Math.sin(Math.PI * (0.2 + 0.8 * t)) * rng.range(0.8, 1.1)
+          if (hanging) {
+            paths.push({ d: `M${qx.toFixed(1)} ${qy.toFixed(1)}l${(dir * len * 0.35).toFixed(1)} ${(len * 0.95).toFixed(1)}`, w: 1 })
+            paths.push({ d: `M${qx.toFixed(1)} ${qy.toFixed(1)}l${(-dir * len * 0.1).toFixed(1)} ${(len * 0.8).toFixed(1)}`, w: 1 })
+          } else {
+            paths.push({ d: `M${qx.toFixed(1)} ${qy.toFixed(1)}l${(dir * len * 0.45).toFixed(1)} ${(len * (0.5 + p.arch * 0.6)).toFixed(1)}`, w: 1.1 })
+            paths.push({ d: `M${qx.toFixed(1)} ${qy.toFixed(1)}l${(dir * len * 0.2).toFixed(1)} ${(-len * (0.7 - p.arch * 0.3)).toFixed(1)}`, w: 1.1 })
+          }
         }
       }
     }
