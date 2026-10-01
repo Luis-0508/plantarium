@@ -1,5 +1,6 @@
 import type { Plant } from '../data/types'
 import { PlantGlyph } from './PlantGlyph'
+import { niceAxis, validTrait } from './comparison-scale'
 
 interface Trait {
   label: string
@@ -11,7 +12,10 @@ interface Trait {
 
 const lvl = (v: number, max = 5) => (v - 1) / (max - 1)
 
-const TRAITS: Trait[] = [
+function traitsFor(plants: Plant[]): Trait[] {
+  const temperature = niceAxis(Math.min(5, ...plants.map((p) => p.care.temperature.minimum)), Math.max(35, ...plants.map((p) => p.care.temperature.maximum)))
+  const rootDepth = niceAxis(0, Math.max(1, ...plants.map((p) => p.roots.depthCm))).max
+  return [
   {
     label: 'Licht',
     ends: ['Schatten', 'Sonne'],
@@ -35,10 +39,10 @@ const TRAITS: Trait[] = [
   },
   {
     label: 'Temperatur',
-    ends: ['5 °C', '35 °C'],
+    ends: [`${temperature.min} °C`, `${temperature.max} °C`],
     value: (p) => {
       const t = p.care.temperature
-      const n = (v: number) => (v - 5) / 30
+      const n = (v: number) => (v - temperature.min) / (temperature.max - temperature.min)
       return [n(t.minimum), n((t.ideal.min + t.ideal.max) / 2), n(t.maximum)]
     },
     describe: (p) => `ideal ${p.care.temperature.ideal.min}–${p.care.temperature.ideal.max} °C, min. ${p.care.temperature.minimum} °C`,
@@ -63,9 +67,9 @@ const TRAITS: Trait[] = [
   },
   {
     label: 'Wurzeltiefe',
-    ends: ['0 cm', '40 cm'],
+    ends: ['0 cm', `${rootDepth} cm`],
     value: (p) => {
-      const v = p.roots.depthCm / 40
+      const v = p.roots.depthCm / rootDepth
       return [v, v, v]
     },
     describe: (p) => `${p.roots.structureLabel}, ca. ${p.roots.depthCm} cm tief`,
@@ -80,13 +84,14 @@ const TRAITS: Trait[] = [
     describe: (p) => `Empfindlichkeit ${p.roots.waterloggingSensitivity} von 5`,
   },
 ]
+}
 
 /** Standing figure, 100 units tall, feet at y = 100. */
 const PERSON =
   'M50 0a7 7 0 1 1 0 14a7 7 0 1 1 0-14zM41 17h18q6 0 7 7l4 27q.5 3-2.5 3.5t-3.5-2.5l-4-24v74q0 3-3.5 3t-3.5-3v-42h-2v42q0 3-3.5 3t-3.5-3v-74l-4 24q-.5 3-3.5 2.5t-2.5-3.5l4-27q1-7 7-7z'
 
 function Lineup({ plants, onOpen }: { plants: Plant[]; onOpen: (id: string) => void }) {
-  const domain = 250
+  const { max: domain, ticks } = niceAxis(0, Math.max(170, ...plants.map((p) => p.dimensions.maxIndoorHeightCm.max)))
   const H = 280
   const base = H - 30
   const top = 14
@@ -95,13 +100,13 @@ function Lineup({ plants, onOpen }: { plants: Plant[]; onOpen: (id: string) => v
   const slot = 170
   const W = 60 + slot * (plants.length + 1)
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="lineup" role="img" aria-label="Maximale Höhe im Raum, maßstäblich neben einer 170 cm großen Person">
-      {[0, 50, 100, 150, 200, 250].map((cm) => (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ minWidth: W }} className="lineup" role="group" aria-label="Maximale Höhe im Raum, maßstäblich neben einer 170 cm großen Person">
+      {ticks.map((cm) => (
         <g key={cm}>
           <line x1={46} x2={W - 10} y1={y(cm)} y2={y(cm)} className={cm === 0 ? 'viz-axis' : 'viz-grid'} />
           <text x={38} y={y(cm) + 4} textAnchor="end" className="viz-text">
             {cm}
-            {cm === 250 ? ' cm' : ''}
+            {cm === domain ? ' cm' : ''}
           </text>
         </g>
       ))}
@@ -118,7 +123,11 @@ function Lineup({ plants, onOpen }: { plants: Plant[]; onOpen: (id: string) => v
         // Bracket beside the plant body, but never into the neighbouring slot.
         const bx = cx + Math.min(w * 0.42 + 8, slot / 2 - 14)
         return (
-          <g key={p.id} className="lineup__plant" style={{ color: p.swatch }} onClick={() => onOpen(p.id)}>
+          <g key={p.id} className="lineup__plant" style={{ color: p.swatch }} role="button" tabIndex={0}
+            aria-label={`${p.commonName}: ${min}–${max} cm, im 3D-Modell öffnen`} onClick={() => onOpen(p.id)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen(p.id) }
+            }}>
             <PlantGlyph plant={p} x={cx - w / 2} y={base - unit * 130} width={w} height={unit * 132} />
             <path d={`M${bx - 4} ${y(max)}h4V${y(min)}h-4`} className="lineup__bracket" />
             <text x={bx} y={y(max) - 8} textAnchor="end" className="viz-text viz-text--strong">
@@ -135,12 +144,13 @@ function Lineup({ plants, onOpen }: { plants: Plant[]; onOpen: (id: string) => v
 }
 
 export function Comparison({ plants, onOpen }: { plants: Plant[]; onOpen: (id: string) => void }) {
+  const traits = traitsFor(plants)
   return (
     <main className="compare">
       <header className="compare__head">
-        <h1>Drei Arten im Vergleich</h1>
+        <h1>Pflanzen im Vergleich</h1>
         <p>
-          Balken zeigen, was eine Pflanze toleriert, der Punkt ihren Idealwert. Ein Klick auf einen Namen öffnet die Pflanze im 3D-Modell.
+          Balken zeigen den angegebenen Bereich, Punkte den Idealwert oder die jeweilige Einstufung. Ein Klick auf einen Namen öffnet die Pflanze im 3D-Modell.
         </p>
         <ul className="legend">
           {plants.map((p) => (
@@ -158,20 +168,25 @@ export function Comparison({ plants, onOpen }: { plants: Plant[]; onOpen: (id: s
 
       <section className="compare__block">
         <h2>Größe im Raum</h2>
-        <Lineup plants={plants} onOpen={onOpen} />
+        <p className="lineup-hint">Weitere Pflanzen sind bei Bedarf durch seitliches Scrollen erreichbar.</p>
+        <div className="lineup-scroll" tabIndex={0} role="region" aria-label="Größenvergleich, horizontal scrollbar">
+          <Lineup plants={plants} onOpen={onOpen} />
+        </div>
       </section>
 
       <section className="compare__block">
         <h2>Ansprüche</h2>
-        <div className="traits">
-          {TRAITS.map((t) => (
+        <div className={`traits${plants.length > 3 ? ' traits--many' : ''}`}>
+          {traits.map((t) => (
             <div className="trait" key={t.label}>
               <h3>{t.label}</h3>
               <div className="trait__plot">
                 {plants.map((p) => {
                   const [min, ideal, max] = t.value(p)
+                  if (!validTrait([min, ideal, max])) return <p key={p.id} className="trait__error">{p.commonName}: Angaben prüfen</p>
                   return (
                     <div key={p.id} className="trait__lane" style={{ color: p.swatch }} title={`${p.commonName}: ${t.describe(p)}`}>
+                      {plants.length > 3 && <span className="trait__name" aria-hidden>{p.commonName}</span>}
                       <span className="trait__range" style={{ left: `${min * 100}%`, width: `${Math.max(0, max - min) * 100}%` }} />
                       <span className="trait__dot" style={{ left: `${ideal * 100}%` }} />
                       <span className="visually-hidden">

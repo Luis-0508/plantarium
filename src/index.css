@@ -1449,6 +1449,17 @@ p {
   margin-bottom: 20px;
 }
 
+.lineup-scroll {
+  overflow-x: auto;
+  padding: 4px;
+}
+
+.lineup-hint {
+  margin-bottom: 12px;
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
 .lineup {
   display: block;
   width: 100%;
@@ -1536,6 +1547,22 @@ p {
   font-size: 11px;
   color: var(--ink-3);
 }
+
+.traits--many .trait__lane {
+  height: 30px;
+}
+
+.trait__name {
+  display: block;
+  color: var(--ink-2);
+  font-size: 11px;
+  line-height: 16px;
+  padding-left: 4px;
+}
+
+.traits--many .trait__dot { top: 19px; }
+.traits--many .trait__range { top: 22px; }
+.trait__error { padding: 0 4px; font-size: 12px; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1180px) {
