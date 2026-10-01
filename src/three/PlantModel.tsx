@@ -1,6 +1,6 @@
 import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { Component, Suspense, useMemo, useRef, type ReactNode, type RefObject } from 'react'
+import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode, type RefObject } from 'react'
 import * as THREE from 'three'
 import type { AnatomyRegion, Plant } from '../data/types'
 import type { StageAnim } from '../viewTypes'
@@ -22,11 +22,13 @@ const LEAF_DEPTH = createPoseDepthMaterial()
 /** Renders the plant's shoot and roots from a procedural generator or a GLB file. */
 export function PlantModel({ plant, anim }: Props) {
   const model = plant.model
+  const fallbackPlant = useMemo(() => plant.model.kind === 'gltf' && plant.model.fallback
+    ? { ...plant, model: plant.model.fallback } : null, [plant])
   if (model.kind === 'procedural') return <ProceduralPlant key={plant.id} plant={plant} anim={anim} />
 
-  const fallback = model.fallback ? <ProceduralPlant key={`${plant.id}-fallback`} plant={{ ...plant, model: model.fallback }} anim={anim} /> : null
+  const fallback = fallbackPlant ? <ProceduralPlant key={`${plant.id}-fallback`} plant={fallbackPlant} anim={anim} /> : null
   return (
-    <ModelErrorBoundary fallback={fallback} url={model.url}>
+    <ModelErrorBoundary key={`${plant.id}:${model.url}:${model.rootsUrl ?? ''}`} fallback={fallback} url={model.url}>
       <Suspense fallback={fallback}>
         <GltfPlant url={model.url} rootsUrl={model.rootsUrl} />
       </Suspense>
@@ -53,6 +55,10 @@ function FoliageMaterial({ height, roughness, materialRef }: { height: number; r
 
 function ProceduralPlant({ plant, anim }: Props) {
   const geometry = useMemo(() => buildProceduralGeometry(plant), [plant])
+  // Geometry is supplied through mesh props, outside R3F's declarative ownership.
+  // Release GPU buffers when this specimen leaves the stage. Cached CPU arrays
+  // remain reusable; three.js uploads them again on the next mount.
+  useEffect(() => () => Object.values(geometry).forEach((part) => part.dispose()), [geometry])
   const height = plant.dimensions.specimenHeight
   const leaf = useRef<THREE.MeshStandardMaterial>(null)
   const stem = useRef<THREE.MeshStandardMaterial>(null)

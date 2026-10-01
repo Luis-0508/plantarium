@@ -1,5 +1,5 @@
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import type { AnatomyRegion, Plant } from '../data/types'
 import type { DayTime, PotOption, SoilOption, StageAnim, ViewMode } from '../viewTypes'
@@ -9,9 +9,12 @@ import { soilLevel } from './models/potShape'
 import { PlantModel } from './PlantModel'
 import { RootRuler } from './RootRuler'
 import { Vessel } from './Vessel'
+import { specimenTransition } from './specimen-transition'
 
 export interface SpecimenProps {
   plant: Plant
+  requestedPlant: Plant
+  onPlantSwap: (id: string) => void
   mode: ViewMode
   potOption: PotOption
   soilOption: SoilOption
@@ -44,15 +47,13 @@ function targetsFor(mode: ViewMode, pot: PotOption, soil: SoilOption) {
 const easeOut = (t: number) => 1 - (1 - t) ** 3
 
 /**
- * The specimen on the stage: pot, soil, plant and roots. Handles the
- * shrink-and-regrow transition between plants and eases every view change.
+ * The active specimen: pot, soil, plant and roots. Shrinks before asking the
+ * app to commit the requested plant, then regrows the shared active specimen.
  */
 export function Specimen(props: SpecimenProps) {
   const { plant, mode, potOption, soilOption, dayTime, selectedRegion, hoveredRegion, reducedMotion } = props
-  const [shown, setShown] = useState(plant)
   const growGroup = useRef<THREE.Group>(null)
   const modelSpace = useRef<THREE.Group>(null)
-  const phase = useRef<'in' | 'out'>('in')
   const anim = useRef<StageAnim>({
     ...targetsFor(mode, potOption, soilOption),
     grow: reducedMotion ? 1 : 0,
@@ -61,12 +62,14 @@ export function Specimen(props: SpecimenProps) {
   })
 
   useEffect(() => {
-    if (plant.id !== shown.id) phase.current = 'out'
-  }, [plant, shown.id])
-
-  useEffect(() => {
     windUniforms.uWind.value = reducedMotion ? 0 : 1
   }, [reducedMotion])
+
+  const changing = plant.id !== props.requestedPlant.id
+  useEffect(() => {
+    document.body.style.cursor = ''
+    return () => { document.body.style.cursor = '' }
+  }, [mode, changing])
 
   useFrame((state, dt) => {
     const a = anim.current
@@ -92,19 +95,13 @@ export function Specimen(props: SpecimenProps) {
     const focus = selectedRegion ?? hoveredRegion
     for (const r of REGIONS) {
       const target = mode === 'anatomy' && focus === r ? 1 : 0
-      a.highlight[r] += (target - a.highlight[r]) * (1 - Math.exp(-step * 10))
+      a.highlight[r] += (target - a.highlight[r]) * (reducedMotion ? 1 : 1 - Math.exp(-step * 10))
     }
 
     // Plant switch: wilt back into the soil, swap, then regrow.
-    if (phase.current === 'out') {
-      a.grow = reducedMotion ? 0 : Math.max(0, a.grow - step * 3.2)
-      if (a.grow <= 0) {
-        phase.current = 'in'
-        setShown(plant)
-      }
-    } else if (a.grow < 1) {
-      a.grow = reducedMotion ? 1 : Math.min(1, a.grow + step / 1.25)
-    }
+    const transition = specimenTransition(a.grow, changing, dt, reducedMotion)
+    a.grow = transition.grow
+    if (transition.swap) props.onPlantSwap(props.requestedPlant.id)
 
     if (growGroup.current) {
       const s = Math.max(0.0001, easeOut(a.grow))
@@ -113,12 +110,13 @@ export function Specimen(props: SpecimenProps) {
     }
   })
 
-  const soilY = soilLevel(shown.pot.height)
-  const interactive = mode === 'anatomy'
+  const soilY = soilLevel(plant.pot.height)
+  const interactive = mode === 'anatomy' && !changing
 
   // Pick the most meaningful region under the pointer. Soil is translucent in
   // this view, so rays through its sides resolve to the roots behind it.
   const regionFrom = (e: ThreeEvent<PointerEvent | MouseEvent>): AnatomyRegion | null => {
+    if (changing || anim.current.grow < 1) return null
     const hits = e.intersections.filter((i) => i.object.userData.region)
     if (!hits.length) return null
     const first = hits[0]
@@ -164,14 +162,14 @@ export function Specimen(props: SpecimenProps) {
       <group position={[0, soilY, 0]}>
         <group ref={growGroup}>
           <group position={[0, -soilY, 0]} ref={modelSpace}>
-            <PlantModel plant={shown} anim={anim} />
+            <PlantModel plant={plant} anim={anim} />
           </group>
         </group>
       </group>
 
-      {mode === 'roots' && shown.id === plant.id && <RootRuler plant={shown} anim={anim} />}
-      {mode === 'anatomy' && shown.id === plant.id && (
-        <Hotspots plant={shown} space={modelSpace} />
+      {mode === 'roots' && !changing && <RootRuler plant={plant} anim={anim} />}
+      {mode === 'anatomy' && !changing && (
+        <Hotspots plant={plant} space={modelSpace} />
       )}
     </group>
   )

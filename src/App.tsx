@@ -4,14 +4,14 @@ import type { AnatomyRegion } from './data/types'
 import { Comparison } from './ui/Comparison'
 import { InfoPanel } from './ui/InfoPanel'
 import { StageOverlay } from './ui/StageOverlay'
+import { StageBoundary, StageFailure } from './ui/StageBoundary'
+import { useHashNavigation } from './useHashNavigation'
 import { AnatomyCard, CameraTools, DayToggle, ModeSwitch, PlantSelector, VesselToggles } from './ui/StageControls'
 import type { CameraCommand, DayTime, PotOption, SoilOption, ViewMode } from './viewTypes'
 
 // three.js + drei are the bulk of the bundle; load the stage separately so
 // the specimen sheet and controls paint immediately.
 const Stage = lazy(() => import('./three/Stage').then((m) => ({ default: m.Stage })))
-
-type Page = 'explore' | 'compare'
 
 function useMediaQuery(query: string) {
   return useSyncExternalStore(
@@ -24,15 +24,10 @@ function useMediaQuery(query: string) {
   )
 }
 
-function readHash() {
-  const [page, id] = window.location.hash.replace('#', '').split('/')
-  return { page: (page === 'vergleich' ? 'compare' : 'explore') as Page, id: id || plants[0].id }
-}
-
 export default function App() {
-  const initial = readHash()
-  const [page, setPage] = useState<Page>(initial.page)
-  const [plantId, setPlantId] = useState(getPlant(initial.id).id)
+  const { route: { page, plantId }, navigate } = useHashNavigation()
+  const [shownId, setShownId] = useState(plantId)
+  const [previousRoute, setPreviousRoute] = useState({ page, plantId })
   const [mode, setMode] = useState<ViewMode>('plant')
   const [potOption, setPotOption] = useState<PotOption>('solid')
   const [soilOption, setSoilOption] = useState<SoilOption>('solid')
@@ -44,18 +39,25 @@ export default function App() {
   const stageRef = useRef<HTMLDivElement>(null)
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 
-  const plant = getPlant(plantId)
+  // Reset route-specific interaction before the next route can paint with a
+  // region selected from the previous plant.
+  if (previousRoute.page !== page || previousRoute.plantId !== plantId) {
+    setPreviousRoute({ page, plantId })
+    setSelectedRegion(null)
+    setHoveredRegion(null)
+    setCommand(null)
+    // There is no mounted specimen to animate while viewing the comparison.
+    if (page === 'compare' || previousRoute.page === 'compare') setShownId(plantId)
+  }
 
-  useEffect(() => {
-    const hash = page === 'compare' ? '#vergleich' : `#pflanze/${plantId}`
-    if (window.location.hash !== hash) history.replaceState(null, '', hash)
-  }, [page, plantId])
+  const plant = getPlant(shownId)
+  const requestedPlant = getPlant(plantId)
+  const changingPlant = shownId !== plantId
 
   const selectPlant = useCallback((id: string) => {
-    setPlantId(id)
+    navigate({ page: 'explore', plantId: id })
     setSelectedRegion(null)
-    setPage('explore')
-  }, [setPage])
+  }, [navigate])
 
   const changeMode = useCallback((m: ViewMode) => {
     setMode(m)
@@ -96,14 +98,19 @@ export default function App() {
   return (
     <div className={`app app--${page}`}>
       <header className="masthead">
-        <a className="wordmark" href="#pflanze" onClick={() => setPage('explore')}>
+        <a className="wordmark" href={`#pflanze/${plantId}`} onClick={(event) => {
+          if (event.button === 0 && !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+            event.preventDefault()
+            navigate({ page: 'explore', plantId })
+          }
+        }}>
           Plantarium
         </a>
         <nav className="pages" aria-label="Bereiche">
-          <button type="button" aria-current={page === 'explore'} onClick={() => setPage('explore')}>
+          <button type="button" aria-current={page === 'explore' ? 'page' : undefined} onClick={() => navigate({ page: 'explore', plantId })}>
             Erkunden
           </button>
-          <button type="button" aria-current={page === 'compare'} onClick={() => setPage('compare')}>
+          <button type="button" aria-current={page === 'compare' ? 'page' : undefined} onClick={() => navigate({ page: 'compare', plantId })}>
             Vergleichen
           </button>
         </nav>
@@ -113,35 +120,39 @@ export default function App() {
         <Comparison plants={plants} onOpen={selectPlant} />
       ) : (
         <main className="explorer">
-          <div className={`stage stage--${mode}`} ref={stageRef}>
+          <div className={`stage stage--${mode}`} ref={stageRef} data-plant-id={plant.id} aria-busy={changingPlant}>
             <div className="stage__backdrop stage__backdrop--studio" aria-hidden />
             <div className="stage__backdrop stage__backdrop--cyan" aria-hidden />
             <div className="stage__canvas">
-              <Suspense fallback={<p className="stage__loading">Präparat wird vorbereitet …</p>}>
-                <Stage
-                  plant={plant}
-                  mode={mode}
-                  potOption={potOption}
-                  soilOption={soilOption}
-                  dayTime={dayTime}
-                  selectedRegion={selectedRegion}
-                  hoveredRegion={hoveredRegion}
-                  onHoverRegion={setHoveredRegion}
-                  onSelectRegion={setSelectedRegion}
-                  reducedMotion={reducedMotion}
-                  command={command}
-                />
-              </Suspense>
+              <StageBoundary fallback={<StageFailure plantId={plantId} onPlantSwap={setShownId} />}>
+                <Suspense fallback={<p className="stage__loading" role="status">Präparat wird vorbereitet …</p>}>
+                  <Stage
+                    plant={plant}
+                    requestedPlant={requestedPlant}
+                    onPlantSwap={setShownId}
+                    mode={mode}
+                    potOption={potOption}
+                    soilOption={soilOption}
+                    dayTime={dayTime}
+                    selectedRegion={selectedRegion}
+                    hoveredRegion={hoveredRegion}
+                    onHoverRegion={setHoveredRegion}
+                    onSelectRegion={setSelectedRegion}
+                    reducedMotion={reducedMotion}
+                    command={command}
+                  />
+                </Suspense>
+              </StageBoundary>
             </div>
 
-            <StageOverlay plant={plant} mode={mode} selected={selectedRegion} hovered={hoveredRegion} onSelect={setSelectedRegion} />
+            {!changingPlant && <StageOverlay plant={plant} mode={mode} selected={selectedRegion} hovered={hoveredRegion} onSelect={setSelectedRegion} />}
 
             <div className="stage__title" key={plant.id}>
               <h1>{plant.commonName}</h1>
               <p className="stage__botanical">{plant.botanicalName}</p>
               <p className="stage__english">{plant.englishName}</p>
               {mode === 'roots' && (
-                <p className="stage__caption">Topf und Substrat sind ausgeblendet. Maße gelten für eine Pflanze im empfohlenen Topf.</p>
+                <p className="stage__caption">Maße gelten für eine Pflanze im empfohlenen Topf.</p>
               )}
             </div>
 
@@ -161,13 +172,13 @@ export default function App() {
 
             {mode === 'anatomy' && (
               <div className="stage__anatomy">
-                <AnatomyCard plant={plant} selected={selectedRegion} onSelect={setSelectedRegion} />
+                <AnatomyCard plant={plant} selected={selectedRegion} onSelect={setSelectedRegion} disabled={changingPlant} />
               </div>
             )}
 
 
             <div className="stage__footer">
-              <PlantSelector plants={plants} activeId={plant.id} onSelect={selectPlant} />
+              <PlantSelector plants={plants} activeId={plantId} onSelect={selectPlant} />
             </div>
 
             {mode === 'plant' && (
@@ -178,7 +189,7 @@ export default function App() {
             )}
           </div>
 
-          <InfoPanel plant={plant} mode={mode} />
+          <InfoPanel plant={plant} mode={mode} reducedMotion={reducedMotion} />
         </main>
       )}
     </div>

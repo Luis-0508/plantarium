@@ -16,7 +16,9 @@ export interface PlantGeometry {
   roots: THREE.BufferGeometry
 }
 
-const cache = new Map<string, PlantGeometry>()
+// Plant records are immutable inputs: replace the object when parameters change.
+// Weak keys allow discarded records and their CPU geometry buffers to be collected.
+const cache = new WeakMap<Plant, PlantGeometry>()
 
 /**
  * Builds (and caches) the procedural geometry for a plant. To add a new
@@ -24,7 +26,7 @@ const cache = new Map<string, PlantGeometry>()
  * and dispatch it here.
  */
 export function buildProceduralGeometry(plant: Plant): PlantGeometry {
-  const cached = cache.get(plant.id)
+  const cached = cache.get(plant)
   if (cached) return cached
   if (plant.model.kind !== 'procedural') throw new Error(`${plant.id} has no procedural model`)
 
@@ -50,7 +52,7 @@ export function buildProceduralGeometry(plant: Plant): PlantGeometry {
   })
 
   const geometry = { leaves: shoot.leaves, stems: shoot.stems, crown: shoot.crown, roots }
-  cache.set(plant.id, geometry)
+  cache.set(plant, geometry)
   return geometry
 }
 
@@ -63,14 +65,14 @@ export interface ShootBounds {
   reach: number
 }
 
-const boundsCache = new Map<string, ShootBounds>()
+const boundsCache = new WeakMap<Plant, ShootBounds>()
 
 /**
  * Robust shoot extent for camera framing. Percentiles keep a single long
  * runner or frond tip from forcing the camera far away.
  */
 export function plantBounds(plant: Plant): ShootBounds {
-  const cached = boundsCache.get(plant.id)
+  const cached = boundsCache.get(plant)
   if (cached) return cached
   let bounds: ShootBounds
   if (plant.model.kind !== 'procedural') {
@@ -92,7 +94,7 @@ export function plantBounds(plant: Plant): ShootBounds {
     const pct = (arr: number[], q: number) => arr[Math.min(arr.length - 1, Math.floor(arr.length * q))]
     bounds = { top: pct(heights, 0.995), body: pct(radii, 0.85), reach: radii[radii.length - 1] }
   }
-  boundsCache.set(plant.id, bounds)
+  boundsCache.set(plant, bounds)
   return bounds
 }
 

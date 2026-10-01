@@ -158,6 +158,18 @@ export interface SoilComponent {
   share: number
 }
 
+export interface HorticulturalSource {
+  id: string
+  title: string
+  author: string
+  url: string
+  /** Date consulted, YYYY-MM-DD. A citation alone does not imply review. */
+  accessedOn: string
+  notes?: string
+}
+
+export type SourceSection = 'care' | 'dimensions' | 'roots' | 'anatomy'
+
 export interface Plant {
   id: string
   commonName: string
@@ -178,6 +190,9 @@ export interface Plant {
    * stage then offers a time-of-day switch; the model encodes the motion.
    */
   nyctinasty?: boolean
+
+  /** IDs from sources.ts, grouped by subject. Missing references remain unverified. */
+  sourceRefs?: Partial<Record<SourceSection, string[]>>
 
   care: {
     /** 0 = deep shade, 1 = direct sun. */
