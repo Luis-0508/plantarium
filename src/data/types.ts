@@ -111,11 +111,15 @@ export interface DracaenaParams {
   /** Canes that fork below the top into a second, shorter head. */
   forks: number
   leavesPerHead: number
+  /** Length of the leafy upper part of a cane (m). */
+  headLength: number
   leafLength: number
   /** Half-width of the strap leaf (m). */
   leafWidth: number
   leafColor: string
   marginColor: string
+  /** Pale stripe inside the red margin (cultivars such as 'Tricolor'). */
+  stripeColor: string
   barkColor: string
 }
 

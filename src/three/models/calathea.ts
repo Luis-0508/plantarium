@@ -3,22 +3,28 @@ import type { CalatheaParams } from '../../data/types'
 import { MeshBuilder, arcSpine, type Rng } from './geometry'
 
 const GOLDEN_ANGLE = 2.39996
+const UP = new THREE.Vector3(0, 1, 0)
 const MIDRIB = new THREE.Color('#e4e9c4')
 const SHEATH = new THREE.Color('#b7b98a')
 const PULVINUS = new THREE.Color('#8a7a3e')
 
 /**
- * Cross-section columns, dense enough to resolve the feather patches. Listed
- * from +1 to −1 so the face winding puts the geometric normal on the upper
- * side; the shadow normal bias then samples above the broad blade instead of
- * below it, which would leave the upper side in its own shadow.
+ * Cross-section columns, dense enough to resolve the diagonal feather stripes.
+ * Listed from +1 to −1 so the face winding puts the geometric normal on the
+ * upper side; the shadow normal bias then samples above the broad blade
+ * instead of below it, which would leave the upper side in its own shadow.
  */
-const COLUMNS = [1, 0.93, 0.84, 0.72, 0.58, 0.44, 0.3, 0.17, 0.07, 0, -0.07, -0.17, -0.3, -0.44, -0.58, -0.72, -0.84, -0.93, -1]
+const COLUMNS = [1, 0.95, 0.89, 0.82, 0.74, 0.66, 0.58, 0.5, 0.42, 0.34, 0.26, 0.18, 0.1, 0.04, 0]
+COLUMNS.push(...COLUMNS.slice(0, -1).map((s) => -s).reverse())
+
+/** Lateral veins run from the midrib toward margin and tip at a shallow angle. */
+const VEIN_SLANT = 0.3
 
 /**
- * Calathea (Goeppertia) clump: long thin petioles end in a pulvinus joint
- * that holds a broad, oval blade. The blade is two layers: a patterned upper
- * side and a wine-red underside. Young leaves emerge rolled like a cigar.
+ * Calathea (Goeppertia makoyana) clump: a dense, upright bush of oval blades
+ * held at every height on thin reddish petioles, each ending in a pulvinus
+ * joint. The blade is two layers: a patterned upper side and a wine-red
+ * underside. Young leaves emerge rolled like a cigar.
  */
 export function generateCalathea(rng: Rng, p: CalatheaParams, soilY: number, potRadius: number) {
   const leaves = new MeshBuilder()
@@ -32,74 +38,88 @@ export function generateCalathea(rng: Rng, p: CalatheaParams, soilY: number, pot
   const petiole = new THREE.Color(p.petioleColor)
 
   /**
-   * Peacock pattern: alternating large and small dark ovals that sweep from
-   * the midrib toward the margin along the lateral veins, a dark margin band
-   * and a pale midrib. Returns 0 (ground) … 1 (patch).
+   * Peacock pattern: dark feather stripes follow the lateral veins from the
+   * midrib toward the margin, long and short ones alternating, inside a dark
+   * margin band. Returns 0 (pale ground) … 1 (dark green).
    */
   const pattern = (t: number, s: number) => {
     const a = Math.abs(s)
-    if (a > 0.9) return 0.75
+    if (a > 0.84) return 0.9
+    const u = t - a * VEIN_SLANT
+    const step = 0.86 / p.patches
     let m = 0
-    const step = 0.82 / p.patches
     for (let k = 0; k < p.patches; k++) {
-      const big = k % 2 === 0
-      const tc = 0.09 + step * (k + 0.5) + a * 0.07
-      const dt = (t - tc) / (step * (big ? 0.42 : 0.26))
-      const ds = a / (big ? 0.78 : 0.45)
-      m = Math.max(m, 1 - THREE.MathUtils.smoothstep(dt * dt + ds * ds, 0.55, 1.05))
+      const long = k % 2 === 0
+      const reach = long ? 0.86 : 0.56
+      if (a > reach) continue
+      const taper = Math.sin(Math.PI * Math.min(1, (a + 0.06) / (reach + 0.06))) ** 0.6
+      const half = step * (long ? 0.4 : 0.3) * taper + 1e-4
+      const d = Math.abs(u - (0.02 + step * (k + 0.5) - 0.15)) / half
+      m = Math.max(m, 1 - THREE.MathUtils.smoothstep(d, 0.55, 1.1))
     }
-    return m
+    // A thin pale zone hugs the midrib.
+    return m * THREE.MathUtils.smoothstep(a, 0.03, 0.1)
   }
 
-  // Rounded base, widest just below the middle, short acuminate tip.
+  // Rounded base, widest just below the middle, acuminate tip.
   const bladeWidth = (w: number) => (t: number) => {
-    const f = Math.sin(Math.PI * t ** 0.82) ** 0.55
-    return w * (t < 0.5 ? Math.max(0.14, f) : f)
+    const f = Math.sin(Math.PI * t ** 0.85) ** 0.6
+    return w * (t < 0.5 ? Math.max(0.16, f) : f)
   }
 
-  const addBlade = (origin: THREE.Vector3, dir: THREE.Vector3, length: number, width: number, droop: number) => {
-    const spine = arcSpine(origin, dir, length, droop, 44)
-    const twist = rng.range(-0.35, 0.35)
-    const tint = rng.range(-0.04, 0.04)
-    const shape = { spine, columns: COLUMNS, keel: 0.08, twist, width: bladeWidth(width) }
+  /**
+   * `faceOut`: an upright blade stands like a paddle with its upper side
+   * turned outward, instead of toward the plant centre as the default frame
+   * (upper side = the side facing up) would put it.
+   */
+  const addBlade = (origin: THREE.Vector3, dir: THREE.Vector3, length: number, width: number, droop: number, faceOut: boolean) => {
+    const spine = arcSpine(origin, dir, length, droop, 64)
+    const twist = rng.range(-0.3, 0.3)
+    const tint = rng.range(-0.03, 0.03)
+    const sideHint = faceOut ? new THREE.Vector3().crossVectors(UP, dir).normalize() : undefined
+    const shape = { spine, columns: COLUMNS, keel: 0.1, twist, sideHint, width: bladeWidth(width) }
     leaves.addRibbon({
       ...shape,
       color: (t, s) => {
-        if (s === 0) return MIDRIB.clone().lerp(ground, t * 0.4)
-        return ground
-          .clone()
-          .offsetHSL(0, 0, tint)
-          .lerp(patch, pattern(t, s))
+        if (s === 0) return MIDRIB.clone().lerp(ground, t * 0.3)
+        return ground.clone().offsetHSL(0, 0, tint).lerp(patch, pattern(t, s))
       },
     })
     leaves.addRibbon({ ...shape, offset: -0.0007, color: (t, s) => under.clone().lerp(underPatch, pattern(t, s) * 0.8) })
   }
 
-  const clump = potRadius * 0.28
+  // Leaves are stacked at every height: short petioles splay out over the
+  // rim, long ones stand nearly upright and angle their blades upward.
+  const clump = potRadius * 0.38
   for (let i = 0; i < p.leafCount; i++) {
-    const f = p.leafCount > 1 ? i / (p.leafCount - 1) : 0.5 // 0 = outer and older, 1 = inner and younger
-    const az = i * GOLDEN_ANGLE + rng.range(-0.25, 0.25)
-    const r = clump * Math.sqrt(rng.next())
+    const h = THREE.MathUtils.clamp((i + rng.range(0, 1)) / p.leafCount, 0, 1) // 0 = low, 1 = top of the bush
+    const az = i * GOLDEN_ANGLE + rng.range(-0.3, 0.3)
+    const r = clump * Math.sqrt(rng.range(0.05, 1))
     const origin = new THREE.Vector3(Math.cos(az) * r, soilY - 0.005, Math.sin(az) * r)
 
-    const elev = THREE.MathUtils.lerp(0.9, 1.38, f) + rng.range(-0.08, 0.08)
+    const elev = THREE.MathUtils.lerp(0.75, 1.32, h) + rng.range(-0.08, 0.08)
     const dir = new THREE.Vector3(Math.cos(az) * Math.cos(elev), Math.sin(elev), Math.sin(az) * Math.cos(elev))
-    const len = THREE.MathUtils.lerp(p.petioleLength[1], p.petioleLength[0], f) * rng.range(0.85, 1.1)
-    const stalk = arcSpine(origin, dir, len, THREE.MathUtils.lerp(0.28, 0.08, f), 16)
+    const len = THREE.MathUtils.lerp(p.petioleLength[0], p.petioleLength[1], h) * rng.range(0.88, 1.08)
+    const stalk = arcSpine(origin, dir, len, 0.06, 16)
     stems.addTube({
       points: stalk,
       // Clasping sheath at the base, swollen pulvinus below the blade.
-      radius: (t) => 0.0021 * (1 - 0.25 * t) * (1 + 1.3 * Math.max(0, 1 - t / 0.22)) * (t > 0.92 ? 1.4 : 1),
-      color: (t) => (t > 0.92 ? PULVINUS : petiole.clone().lerp(SHEATH, Math.max(0, 1 - t / 0.22) * 0.7)),
+      radius: (t) => 0.0021 * (1 - 0.25 * t) * (1 + 1.1 * Math.max(0, 1 - t / 0.15)) * (t > 0.93 ? 1.35 : 1),
+      color: (t) => (t > 0.93 ? PULVINUS : petiole.clone().lerp(SHEATH, Math.max(0, 1 - t / 0.15) * 0.6)),
       radial: 6,
     })
 
-    const baz = az + rng.range(-0.3, 0.3)
-    // The pulvinus turns the blade's upper side toward the light.
-    const belev = THREE.MathUtils.lerp(-0.15, 0.4, f) + rng.range(-0.12, 0.12)
+    // The pulvinus turns the upper side toward the light: the lowest blades
+    // spread flat over the rim, the rest stand upright facing outward and
+    // curl their tips away from the clump, so the bush shows its pattern
+    // from every side and hides the stalks.
+    const baz = az + rng.range(-0.35, 0.35)
+    const faceOut = h > 0.22
+    const belev = faceOut ? rng.range(1.12, 1.42) : rng.range(-0.05, 0.25)
     const bdir = new THREE.Vector3(Math.cos(baz) * Math.cos(belev), Math.sin(belev), Math.sin(baz) * Math.cos(belev))
-    const size = THREE.MathUtils.lerp(1, 0.68, f) * rng.range(0.88, 1.08)
-    addBlade(stalk[stalk.length - 1], bdir, p.bladeLength * size, p.bladeWidth * size, THREE.MathUtils.lerp(0.32, 0.12, f))
+    const size = THREE.MathUtils.lerp(0.85, 1, Math.sin(Math.PI * h)) * rng.range(0.88, 1.08)
+    const droop = faceOut ? rng.range(0.5, 0.85) : 0.3
+    addBlade(stalk[stalk.length - 1], bdir, p.bladeLength * size, p.bladeWidth * size, droop, faceOut)
   }
 
   // Young leaves unfurl from the centre still rolled, showing their red underside.
@@ -107,7 +127,7 @@ export function generateCalathea(rng: Rng, p: CalatheaParams, soilY: number, pot
     const az = rng.range(0, Math.PI * 2)
     const base = new THREE.Vector3(Math.cos(az) * 0.01, soilY, Math.sin(az) * 0.01)
     const lean = new THREE.Vector3(Math.cos(az), 0, Math.sin(az)).multiplyScalar(rng.range(0.02, 0.05))
-    const stalkLen = p.petioleLength[0] * rng.range(0.55, 0.8)
+    const stalkLen = p.petioleLength[1] * rng.range(0.6, 0.85)
     const top = base.clone().add(lean).setY(soilY + stalkLen)
     stems.addTube({ points: [base, base.clone().lerp(top, 0.5), top], radius: () => 0.0019, color: () => petiole, radial: 6 })
     const rollLen = p.bladeLength * rng.range(0.5, 0.75)
