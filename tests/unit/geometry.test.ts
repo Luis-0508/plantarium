@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
 import { plants } from '../../src/data/plants'
+import { generateCalathea } from '../../src/three/models/calathea'
+import { generateDracaena } from '../../src/three/models/dracaena'
 import { generatePalm } from '../../src/three/models/palm'
 import { generateRosette } from '../../src/three/models/rosette'
 import { generateRoots } from '../../src/three/models/roots'
@@ -14,9 +16,14 @@ const bytes = (array: ArrayBufferView) => Buffer.from(array.buffer, array.byteOf
 function generate(plant: Plant) {
   if (plant.model.kind !== 'procedural') throw new Error('Expected procedural fixture')
   const { params, seed } = plant.model
+  const soilY = soilLevel(plant.pot.height)
   const shoot = params.type === 'rosette'
-    ? generateRosette(createRng(seed), params, soilLevel(plant.pot.height))
-    : generatePalm(createRng(seed), params, soilLevel(plant.pot.height), plant.pot.radius)
+    ? generateRosette(createRng(seed), params, soilY)
+    : params.type === 'palm'
+      ? generatePalm(createRng(seed), params, soilY, plant.pot.radius)
+      : params.type === 'calathea'
+        ? generateCalathea(createRng(seed), params, soilY, plant.pot.radius)
+        : generateDracaena(createRng(seed), params, soilY, plant.pot.radius)
   expect(shoot.rootOrigins.length).toBeGreaterThan(0)
   const roots = generateRoots({ rng: createRng(seed * 31 + 5), potHeight: plant.pot.height,
     potRadius: plant.pot.radius, profile: plant.roots, origins: shoot.rootOrigins })
@@ -31,8 +38,9 @@ describe('procedural geometry', () => {
       try {
         for (const part of ['leaves', 'stems', 'crown', 'roots'] as const) {
           const g = first[part]
-          for (const attribute of ['position', 'normal', 'color']) {
+          for (const attribute of ['position', 'normal', 'color', 'aPivot', 'aMotion', 'aGlow']) {
             const a = g.getAttribute(attribute)
+            expect(a.count).toBe(g.getAttribute('position').count)
             expect(a.count).toBeGreaterThan(0)
             expect(Array.from(a.array).every(Number.isFinite)).toBe(true)
             expect(bytes(a.array).equals(bytes(second[part].getAttribute(attribute).array))).toBe(true)

@@ -4,7 +4,7 @@ import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode, type R
 import * as THREE from 'three'
 import type { AnatomyRegion, Plant } from '../data/types'
 import type { StageAnim } from '../viewTypes'
-import { foliageShader } from './materials'
+import { createPoseDepthMaterial, foliageShader } from './materials'
 import { buildProceduralGeometry } from './models/registry'
 
 interface Props {
@@ -16,6 +16,8 @@ const ROOT_GLOW = new THREE.Color('#f7f3e6')
 const HIGHLIGHT = new THREE.Color('#fffbe8')
 /** Opacity foliage keeps in root view, so the roots stay readable. */
 const SHOOT_VEIL = 0.16
+/** Shadow pass for leaves, following their pose (see `aMotion`). */
+const LEAF_DEPTH = createPoseDepthMaterial()
 
 /** Renders the plant's shoot and roots from a procedural generator or a GLB file. */
 export function PlantModel({ plant, anim }: Props) {
@@ -87,7 +89,7 @@ function ProceduralPlant({ plant, anim }: Props) {
 
   return (
     <group>
-      <mesh geometry={geometry.leaves} userData={{ region: 'leaf' }} castShadow receiveShadow>
+      <mesh geometry={geometry.leaves} userData={{ region: 'leaf' }} customDepthMaterial={LEAF_DEPTH} castShadow receiveShadow>
         <FoliageMaterial height={height} roughness={0.58} materialRef={leaf} />
       </mesh>
       <mesh geometry={geometry.stems} userData={{ region: 'stem' }} castShadow receiveShadow>

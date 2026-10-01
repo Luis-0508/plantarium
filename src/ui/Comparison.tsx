@@ -90,6 +90,7 @@ function traitsFor(plants: Plant[]): Trait[] {
 const PERSON =
   'M50 0a7 7 0 1 1 0 14a7 7 0 1 1 0-14zM41 17h18q6 0 7 7l4 27q.5 3-2.5 3.5t-3.5-2.5l-4-24v74q0 3-3.5 3t-3.5-3v-42h-2v42q0 3-3.5 3t-3.5-3v-74l-4 24q-.5 3-3.5 2.5t-2.5-3.5l4-27q1-7 7-7z'
 
+
 function Lineup({ plants, onOpen }: { plants: Plant[]; onOpen: (id: string) => void }) {
   const { max: domain, ticks } = niceAxis(0, Math.max(170, ...plants.map((p) => p.dimensions.maxIndoorHeightCm.max)))
   const H = 280

@@ -30,7 +30,7 @@ export interface AnatomyNote {
 
 export interface ProceduralModelRef {
   kind: 'procedural'
-  generator: 'rosette' | 'palm'
+  generator: 'rosette' | 'palm' | 'calathea' | 'dracaena'
   params: ProceduralParams
   seed: number
 }
@@ -42,7 +42,7 @@ export interface ProceduralModelRef {
  */
 export type ModelRef = ProceduralModelRef | { kind: 'gltf'; url: string; rootsUrl?: string; fallback?: ProceduralModelRef }
 
-export type ProceduralParams = RosetteParams | PalmParams
+export type ProceduralParams = RosetteParams | PalmParams | CalatheaParams | DracaenaParams
 
 export interface RosetteParams {
   type: 'rosette'
@@ -87,8 +87,46 @@ export interface PalmParams {
   rings: boolean
 }
 
+export interface CalatheaParams {
+  type: 'calathea'
+  leafCount: number
+  petioleLength: [number, number]
+  bladeLength: number
+  /** Half-width of the blade at its widest point (m). */
+  bladeWidth: number
+  /** Dark feather-shaped patches per side of the midrib. */
+  patches: number
+  groundColor: string
+  patchColor: string
+  /** Wine-red underside, drawn as a second layer below the blade. */
+  undersideColor: string
+  petioleColor: string
+}
+
+export interface DracaenaParams {
+  type: 'dracaena'
+  /** Height of each trunk above the soil up to its fork (m). */
+  canes: number[]
+  caneRadius: number
+  /** Branches per trunk fork [min, max]; each carries a leaf head. */
+  branches: [number, number]
+  /** Length of a branch from the fork to its tip (m). */
+  branchLength: number
+  leavesPerHead: number
+  /** Length of the leafy upper part of a branch (m). */
+  headLength: number
+  leafLength: number
+  /** Half-width of the strap leaf (m). */
+  leafWidth: number
+  leafColor: string
+  marginColor: string
+  /** Pale stripe inside the red margin (cultivars such as 'Tricolor'). */
+  stripeColor: string
+  barkColor: string
+}
+
 export interface RootProfile {
-  structure: 'tuberous' | 'fibrous' | 'clumping-fibrous'
+  structure: 'tuberous' | 'fibrous' | 'clumping-fibrous' | 'rhizomatous'
   structureLabel: string
   structureNote: string
   /** Typical rooting depth in a pot, cm. */
@@ -147,6 +185,11 @@ export interface Plant {
    * compiled from general care guides, not yet reviewed by a botanist.
    */
   dataQuality: 'placeholder' | 'reviewed'
+  /**
+   * Leaves rise in the evening and lower in the morning (nyctinasty). The
+   * stage then offers a time-of-day switch; the model encodes the motion.
+   */
+  nyctinasty?: boolean
 
   /** IDs from sources.ts, grouped by subject. Missing references remain unverified. */
   sourceRefs?: Partial<Record<SourceSection, string[]>>

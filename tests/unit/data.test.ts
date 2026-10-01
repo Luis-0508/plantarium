@@ -40,6 +40,20 @@ function model(ref: ProceduralModelRef) {
     positive(p.leafWidth)
     normalized(p.variegation)
     expect(p.variegation).toBeLessThanOrEqual(0.96)
+  } else if (p.type === 'calathea') {
+    integer(p.leafCount, 2)
+    integer(p.patches, 1)
+    tuple(p.petioleLength)
+    positive(p.bladeLength)
+    positive(p.bladeWidth)
+    expect(p.bladeWidth).toBeLessThan(p.bladeLength)
+  } else if (p.type === 'dracaena') {
+    expect(p.canes.length).toBeGreaterThan(0)
+    for (const h of p.canes) positive(h)
+    tuple(p.branches, true)
+    integer(p.leavesPerHead, 2)
+    for (const v of [p.caneRadius, p.branchLength, p.headLength, p.leafLength, p.leafWidth]) positive(v)
+    expect(p.headLength).toBeLessThan(p.branchLength)
   } else {
     integer(p.stems, 1)
     integer(p.suckers, 0)

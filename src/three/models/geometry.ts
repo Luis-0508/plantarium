@@ -6,6 +6,17 @@ const UP = new THREE.Vector3(0, 1, 0)
 const tmp = new THREE.Vector3()
 
 /**
+ * Rigid rotation applied in the vertex shader as the stage's `uPose` goes
+ * from 0 to 1: vertices turn by `angle` (radians) about `axis` through
+ * `pivot`. Used for leaf movements such as the Calathea's evening rise.
+ */
+export interface Motion {
+  pivot: THREE.Vector3
+  axis: THREE.Vector3
+  angle: number
+}
+
+/**
  * Accumulates many small surfaces (leaves, leaflets, tubes) into a single
  * indexed BufferGeometry with vertex colours, keeping draw calls low.
  */
@@ -13,14 +24,33 @@ export class MeshBuilder {
   private positions: number[] = []
   private colors: number[] = []
   private indices: number[] = []
+  private pivots: number[] = []
+  private motions: number[] = []
+  private glows: number[] = []
+  private motion: Motion | null = null
+  private glow = 0
 
   private get vertexCount() {
     return this.positions.length / 3
   }
 
+  /** Motion for every vertex added until the next call; `null` keeps parts still. */
+  setMotion(motion: Motion | null) {
+    this.motion = motion
+  }
+
   private pushVertex(p: THREE.Vector3, c: THREE.Color) {
     this.positions.push(p.x, p.y, p.z)
     this.colors.push(c.r, c.g, c.b)
+    this.glows.push(this.glow)
+    const m = this.motion
+    if (m) {
+      this.pivots.push(m.pivot.x, m.pivot.y, m.pivot.z)
+      this.motions.push(m.axis.x * m.angle, m.axis.y * m.angle, m.axis.z * m.angle)
+    } else {
+      this.pivots.push(0, 0, 0)
+      this.motions.push(0, 0, 0)
+    }
   }
 
   /**
@@ -35,8 +65,13 @@ export class MeshBuilder {
     keel?: number
     twist?: number
     sideHint?: THREE.Vector3
+    /** Shift along the leaf normal (m); negative values lie below the blade. */
+    offset?: number
+    /** Light passing through the leaf: share of its colour added as emission. */
+    glow?: number
   }) {
-    const { spine, width, columns, color, keel = 0, twist = 0 } = opts
+    this.glow = opts.glow ?? 0
+    const { spine, width, columns, color, keel = 0, twist = 0, offset = 0 } = opts
     const n = spine.length
     const base = this.vertexCount
     const side = new THREE.Vector3()
@@ -61,7 +96,7 @@ export class MeshBuilder {
       for (const s of columns) {
         p.copy(spine[i]).addScaledVector(side, s * w)
         // Channel: edges lift along the leaf normal.
-        p.addScaledVector(normal, keel * w * s * s)
+        p.addScaledVector(normal, keel * w * s * s + offset)
         this.pushVertex(p, color(t, s))
       }
     }
@@ -85,6 +120,7 @@ export class MeshBuilder {
     capEnd?: boolean
   }) {
     const { points, radius, color, radial = 6 } = opts
+    this.glow = 0
     const n = points.length
     if (n < 2) return
     const base = this.vertexCount
@@ -135,6 +171,10 @@ export class MeshBuilder {
     const g = new THREE.BufferGeometry()
     g.setAttribute('position', new THREE.Float32BufferAttribute(this.positions, 3))
     g.setAttribute('color', new THREE.Float32BufferAttribute(this.colors, 3))
+    // Always present, so every geometry drawn with the foliage shader binds them.
+    g.setAttribute('aPivot', new THREE.Float32BufferAttribute(this.pivots, 3))
+    g.setAttribute('aMotion', new THREE.Float32BufferAttribute(this.motions, 3))
+    g.setAttribute('aGlow', new THREE.Float32BufferAttribute(this.glows, 1))
     g.setIndex(this.indices)
     g.computeVertexNormals()
     g.computeBoundingSphere()

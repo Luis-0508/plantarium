@@ -1,9 +1,42 @@
 import * as THREE from 'three'
 
-/** Shared uniforms so every swaying material reads the same clock. */
+/**
+ * Shared uniforms so every swaying material reads the same clock. `uPose`
+ * (0–1) drives leaf movements baked into the geometry (`aPivot`/`aMotion`).
+ */
 export const windUniforms = {
   uTime: { value: 0 },
   uWind: { value: 1 },
+  uPose: { value: 0 },
+}
+
+/** GLSL: rigid per-vertex rotation by the axis-angle vector `aMotion` × `uPose`. */
+const POSE_HEADER = /* glsl */ `
+uniform float uPose;
+attribute vec3 aPivot;
+attribute vec3 aMotion;
+vec3 poseRotate(vec3 v, vec3 k, float a) {
+  return v * cos(a) + cross(k, v) * sin(a) + k * dot(k, v) * (1.0 - cos(a));
+}`
+const POSE_SETUP = /* glsl */ `
+  float poseAngle = length(aMotion) * uPose;
+  vec3 poseAxis = poseAngle > 0.0 ? normalize(aMotion) : vec3(0.0, 1.0, 0.0);`
+const POSE_POSITION = /* glsl */ `
+  if (poseAngle > 0.0) transformed = aPivot + poseRotate(transformed - aPivot, poseAxis, poseAngle);`
+
+/**
+ * Depth material for shadow casting that follows the leaf pose, so shadows
+ * move with the leaves.
+ */
+export function createPoseDepthMaterial() {
+  const material = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking })
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uPose = windUniforms.uPose
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', `#include <common>${POSE_HEADER}`)
+      .replace('#include <begin_vertex>', `#include <begin_vertex>${POSE_SETUP}${POSE_POSITION}`)
+  }
+  return material
 }
 
 /**
@@ -16,11 +49,20 @@ export function foliageShader(height: number) {
     shader.uniforms.uTime = windUniforms.uTime
     shader.uniforms.uWind = windUniforms.uWind
     shader.uniforms.uWindHeight = { value: height }
+    shader.uniforms.uPose = windUniforms.uPose
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nuniform float uTime;\nuniform float uWind;\nuniform float uWindHeight;')
+      .replace(
+        '#include <common>',
+        `#include <common>\nuniform float uTime;\nuniform float uWind;\nuniform float uWindHeight;\nattribute float aGlow;\nvarying float vGlow;${POSE_HEADER}`,
+      )
+      .replace(
+        '#include <beginnormal_vertex>',
+        `#include <beginnormal_vertex>${POSE_SETUP}\n  if (poseAngle > 0.0) objectNormal = poseRotate(objectNormal, poseAxis, poseAngle);`,
+      )
       .replace(
         '#include <begin_vertex>',
-        /* glsl */ `#include <begin_vertex>
+        /* glsl */ `#include <begin_vertex>${POSE_POSITION}
+        vGlow = aGlow;
         float windH = clamp(position.y / uWindHeight, 0.0, 1.4);
         float sway = windH * windH * uWind * uWindHeight * 0.035;
         transformed.x += (sin(uTime * 0.9 + position.z * 2.5) + 0.35 * sin(uTime * 2.1 + position.x * 9.0 + position.z * 7.0)) * sway;
@@ -29,10 +71,14 @@ export function foliageShader(height: number) {
       )
     // Cheap translucency: back faces of thin leaves pick up some of their own
     // colour instead of going nearly black, as light would pass through them.
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <emissivemap_fragment>',
-      '#include <emissivemap_fragment>\n  if (!gl_FrontFacing) totalEmissiveRadiance += diffuseColor.rgb * 0.16;',
-    )
+    // `aGlow` adds more for parts that are lit mainly through the leaf, such
+    // as the Calathea's red underside.
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying float vGlow;')
+      .replace(
+        '#include <emissivemap_fragment>',
+        '#include <emissivemap_fragment>\n  if (!gl_FrontFacing) totalEmissiveRadiance += diffuseColor.rgb * 0.16;\n  totalEmissiveRadiance += diffuseColor.rgb * vGlow;',
+      )
   }
   return { onBeforeCompile, customProgramCacheKey: () => `foliage-${height.toFixed(3)}` }
 }

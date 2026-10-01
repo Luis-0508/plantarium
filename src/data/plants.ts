@@ -334,7 +334,224 @@ const parlorPalm: Plant = {
   },
 }
 
-export const plants: Plant[] = [spiderPlant, arecaPalm, parlorPalm]
+const peacockPlant: Plant = {
+  id: 'pfauen-korbmarante',
+  commonName: 'Pfauen-Korbmarante',
+  englishName: 'Peacock Plant',
+  botanicalName: 'Goeppertia makoyana',
+  swatch: '#7a4c78',
+  dataQuality: 'placeholder',
+  nyctinasty: true,
+  family: 'Pfeilwurzgewächse (Marantaceae)',
+  origin: 'Atlantischer Regenwald im Osten Brasiliens',
+  summary:
+    'Breite, ovale Blätter auf langen, dünnen Stielen mit federartiger Zeichnung – oben silbrig-grün, unten weinrot. Abends richtet sie die Blätter auf und senkt sie morgens wieder.',
+  care: {
+    light: { min: 0.22, max: 0.6, ideal: 0.42 },
+    lightNote: 'Hell bis halbschattig, nie direkte Sonne – die Blätter bleichen sonst aus und rollen sich ein.',
+    water: { min: 0.55, max: 0.8, ideal: 0.66 },
+    waterNote: 'Gleichmäßig feucht halten, ohne Staunässe. Weiches, kalkarmes Wasser verhindert braune Ränder.',
+    temperature: { ideal: { min: 18, max: 24 }, minimum: 16, maximum: 30 },
+    humidity: { ideal: { min: 60, max: 80 }, tolerated: { min: 45, max: 90 } },
+    growth: { level: 2, label: 'Mittel', perYearCm: { min: 10, max: 20 } },
+    difficulty: 4,
+    difficultyNote: 'Anspruchsvoll: Trockene Luft, Kalk und Zugluft quittiert sie mit eingerollten, braun gerandeten Blättern.',
+    toxicity: { cats: false, dogs: false, humans: false, note: 'Laut ASPCA ungiftig für Katzen und Hunde.' },
+    soil: {
+      description: 'Humose, leicht saure Erde mit Struktur',
+      mix: [
+        { name: 'Blumenerde', share: 0.5 },
+        { name: 'Kokosfaser', share: 0.25 },
+        { name: 'Perlite', share: 0.25 },
+      ],
+      ph: { min: 5.5, max: 6.5 },
+    },
+    fertilizing: { interval: 'alle 2–4 Wochen', note: 'April bis August, halbe Dosis Grünpflanzendünger – die Wurzeln sind salzempfindlich.' },
+    repotting: {
+      interval: 'alle 1–2 Jahre',
+      years: { min: 1, max: 2 },
+      note: 'Flache, breite Töpfe passen zum flach streichenden Rhizom. Beim Umtopfen lässt sich der Horst teilen.',
+    },
+    schedule: { fertilize: [4, 5, 6, 7, 8], repot: [4, 5] },
+  },
+  dimensions: { maxIndoorHeightCm: { min: 40, max: 60 }, maxSpreadCm: 50, specimenHeight: 0.48 },
+  pot: { height: 0.17, radius: 0.12, color: '#c0b6a8' },
+  roots: {
+    structure: 'rhizomatous',
+    structureLabel: 'Rhizom mit Faserwurzeln',
+    structureNote:
+      'Kurze, kriechende Rhizome treiben feine, eher flach streichende Wurzeln. Einzelne Wurzeln bilden kleine Speicherknöllchen.',
+    depthCm: 11,
+    spreadCm: 11,
+    density: 4,
+    waterloggingSensitivity: 4,
+    recommendedPotDepthCm: { min: 14, max: 18 },
+    model: { primaryCount: 40, thickness: 0.0018, branching: 0.8, tubers: true, color: '#dcc7a2' },
+  },
+  anatomy: [
+    {
+      region: 'leaf',
+      title: 'Blattspreite',
+      text: 'Dunkle, ovale Flecken entlang der Seitennerven ergeben das Pfauenmuster. Die Unterseite trägt dieselbe Zeichnung in Weinrot.',
+      anchor: [0.12, 0.3, 0.1],
+    },
+    {
+      region: 'stem',
+      title: 'Blattstiel & Gelenk',
+      text: 'Ein verdicktes Gelenk (Pulvinus) unter der Spreite dreht das Blatt über den Tag. Nachts stellen sich die Blätter auf – daher „Gebetspflanze“.',
+      anchor: [0.06, 0.2, 0.05],
+    },
+    {
+      region: 'crown',
+      title: 'Junge Blätter',
+      text: 'Neue Blätter schieben sich zusammengerollt aus der Mitte und entfalten sich erst über einige Tage. Bei zu trockener Luft bleiben sie verklebt.',
+      anchor: [0.0, 0.14, 0.0],
+    },
+    {
+      region: 'soil',
+      title: 'Substrat',
+      text: 'Humos und gleichmäßig feucht, aber luftig. Kokosfaser speichert Wasser, Perlite hält das Substrat locker.',
+      anchor: [0.08, -0.02, 0.06],
+    },
+    {
+      region: 'roots',
+      title: 'Rhizom & Wurzeln',
+      text: 'Das Wurzelwerk bleibt flach. Dauernässe im unteren Topfbereich führt schnell zu Fäulnis – deshalb flache Töpfe mit Abzugsloch.',
+      anchor: [0.05, -0.09, 0.06],
+    },
+  ],
+  model: {
+    kind: 'procedural',
+    generator: 'calathea',
+    seed: 13,
+    params: {
+      type: 'calathea',
+      leafCount: 48,
+      petioleLength: [0.04, 0.3],
+      bladeLength: 0.19,
+      bladeWidth: 0.043,
+      patches: 9,
+      groundColor: '#c5d487',
+      patchColor: '#2f5a26',
+      undersideColor: '#8a3559',
+      petioleColor: '#7a4637',
+    },
+  },
+}
+
+const dragonTree: Plant = {
+  id: 'drachenbaum',
+  commonName: 'Drachenbaum',
+  englishName: 'Madagascar Dragon Tree',
+  botanicalName: 'Dracaena marginata',
+  swatch: '#a8452f',
+  dataQuality: 'placeholder',
+  family: 'Spargelgewächse (Asparagaceae)',
+  origin: 'Madagaskar und Mauritius',
+  summary:
+    'Schlanke, verholzte Stämme unterschiedlicher Höhe mit dichten Schöpfen schmaler, rot gerandeter Blätter. Unten verliert sie alte Blätter und wird so mit den Jahren zum kleinen Baum.',
+  care: {
+    light: { min: 0.38, max: 0.85, ideal: 0.64 },
+    lightNote: 'Hell, gern mit etwas Morgen- oder Abendsonne. Bei wenig Licht werden die Blätter schmal und die Stämme vergeilen.',
+    water: { min: 0.22, max: 0.55, ideal: 0.38 },
+    waterNote: 'Erst gießen, wenn die obere Hälfte der Erde trocken ist. Im Winter deutlich sparsamer.',
+    temperature: { ideal: { min: 18, max: 26 }, minimum: 12, maximum: 32 },
+    humidity: { ideal: { min: 40, max: 60 }, tolerated: { min: 30, max: 80 } },
+    growth: { level: 2, label: 'Mittel', perYearCm: { min: 15, max: 30 } },
+    difficulty: 2,
+    difficultyNote: 'Robust. Braune Spitzen deuten auf fluoridhaltiges Wasser oder trockene Luft, gelbe untere Blätter auf zu viel Wasser.',
+    toxicity: {
+      cats: true,
+      dogs: true,
+      humans: false,
+      note: 'Laut ASPCA giftig für Katzen und Hunde (Saponine): Erbrechen, Speicheln, bei Katzen erweiterte Pupillen.',
+    },
+    soil: {
+      description: 'Durchlässige Blumenerde mit mineralischem Anteil',
+      mix: [
+        { name: 'Blumenerde', share: 0.6 },
+        { name: 'Lava / Bims', share: 0.25 },
+        { name: 'Quarzsand', share: 0.15 },
+      ],
+      ph: { min: 6.0, max: 6.5 },
+    },
+    fertilizing: { interval: 'alle 3–4 Wochen', note: 'März bis September, Grünpflanzendünger in normaler Dosis.' },
+    repotting: {
+      interval: 'alle 2–3 Jahre',
+      years: { min: 2, max: 3 },
+      note: 'Schwere Töpfe wählen – die hohen Stämme machen die Pflanze kopflastig.',
+    },
+    schedule: { fertilize: [3, 4, 5, 6, 7, 8, 9], repot: [3, 4] },
+  },
+  dimensions: { maxIndoorHeightCm: { min: 150, max: 300 }, maxSpreadCm: 90, specimenHeight: 0.85 },
+  pot: { height: 0.21, radius: 0.13, color: '#9a8f86' },
+  roots: {
+    structure: 'fibrous',
+    structureLabel: 'Orangegelbe Faserwurzeln',
+    structureNote:
+      'Kräftige, auffällig orange gefärbte Wurzeln entspringen der Stammbasis und verzweigen sich mäßig. Sie vertragen Trockenheit besser als Nässe.',
+    depthCm: 17,
+    spreadCm: 11,
+    density: 3,
+    waterloggingSensitivity: 5,
+    recommendedPotDepthCm: { min: 20, max: 30 },
+    model: { primaryCount: 34, thickness: 0.0026, branching: 0.7, tubers: false, color: '#d8963e' },
+  },
+  anatomy: [
+    {
+      region: 'leaf',
+      title: 'Blattschopf',
+      text: 'Schmale, ledrige Blätter mit rotem Rand stehen spiralig dicht an der Triebspitze. Die untersten vergilben nach zwei bis drei Jahren und fallen ab.',
+      anchor: [0.15, 0.8, 0.1],
+    },
+    {
+      region: 'stem',
+      title: 'Stamm',
+      text: 'Die Ringe auf der Rinde sind Narben abgefallener Blätter. Anders als Palmen kann der Drachenbaum sekundär in die Dicke wachsen und sich verzweigen.',
+      anchor: [0.04, 0.3, 0.03],
+    },
+    {
+      region: 'crown',
+      title: 'Triebspitze',
+      text: 'Hier entstehen die neuen Blätter. Wird ein Stamm gekappt, treibt er unterhalb der Schnittstelle meist zwei bis drei neue Köpfe.',
+      anchor: [0.0, 0.72, 0.0],
+    },
+    {
+      region: 'soil',
+      title: 'Substrat',
+      text: 'Mineralische Anteile lassen überschüssiges Wasser schnell ablaufen und geben den hohen Stämmen Halt.',
+      anchor: [0.1, -0.02, 0.08],
+    },
+    {
+      region: 'roots',
+      title: 'Faserwurzeln',
+      text: 'Die orange Farbe ist normal und kein Zeichen von Fäulnis. Matschige, dunkelbraune Wurzeln dagegen schon.',
+      anchor: [0.06, -0.13, 0.07],
+    },
+  ],
+  model: {
+    kind: 'procedural',
+    generator: 'dracaena',
+    seed: 9,
+    params: {
+      type: 'dracaena',
+      canes: [0.32, 0.18],
+      caneRadius: 0.014,
+      branches: [2, 3],
+      branchLength: 0.2,
+      leavesPerHead: 52,
+      headLength: 0.06,
+      leafLength: 0.32,
+      leafWidth: 0.0055,
+      leafColor: '#7a9466',
+      marginColor: '#c4616a',
+      stripeColor: '#e3cfae',
+      barkColor: '#8b8170',
+    },
+  },
+}
+
+export const plants: Plant[] = [spiderPlant, arecaPalm, parlorPalm, peacockPlant, dragonTree]
 
 export function getPlant(id: string): Plant {
   return plants.find((p) => p.id === id) ?? plants[0]

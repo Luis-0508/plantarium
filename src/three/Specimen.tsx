@@ -2,7 +2,7 @@ import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import type { AnatomyRegion, Plant } from '../data/types'
-import type { PotOption, SoilOption, StageAnim, ViewMode } from '../viewTypes'
+import type { DayTime, PotOption, SoilOption, StageAnim, ViewMode } from '../viewTypes'
 import { Hotspots } from './Hotspots'
 import { windUniforms } from './materials'
 import { soilLevel } from './models/potShape'
@@ -18,6 +18,7 @@ export interface SpecimenProps {
   mode: ViewMode
   potOption: PotOption
   soilOption: SoilOption
+  dayTime: DayTime
   selectedRegion: AnatomyRegion | null
   hoveredRegion: AnatomyRegion | null
   onHoverRegion: (region: AnatomyRegion | null) => void
@@ -50,12 +51,13 @@ const easeOut = (t: number) => 1 - (1 - t) ** 3
  * app to commit the requested plant, then regrows the shared active specimen.
  */
 export function Specimen(props: SpecimenProps) {
-  const { plant, mode, potOption, soilOption, selectedRegion, hoveredRegion, reducedMotion } = props
+  const { plant, mode, potOption, soilOption, dayTime, selectedRegion, hoveredRegion, reducedMotion } = props
   const growGroup = useRef<THREE.Group>(null)
   const modelSpace = useRef<THREE.Group>(null)
   const anim = useRef<StageAnim>({
     ...targetsFor(mode, potOption, soilOption),
     grow: reducedMotion ? 1 : 0,
+    pose: 0,
     highlight: { leaf: 0, stem: 0, crown: 0, soil: 0, roots: 0 },
   })
 
@@ -83,6 +85,12 @@ export function Specimen(props: SpecimenProps) {
     a.stipple += (t.stipple - a.stipple) * k
     a.reveal += (t.reveal - a.reveal) * k
     a.shadow += (t.shadow - a.shadow) * k
+
+    // Leaves rise and settle slowly. Root and anatomy views use the morning
+    // pose, which hotspots and measurements are based on.
+    const pose = mode === 'plant' && dayTime === 'evening' ? 1 : 0
+    a.pose += (pose - a.pose) * (reducedMotion ? 1 : 1 - Math.exp(-step * 1.4))
+    windUniforms.uPose.value = a.pose
 
     const focus = selectedRegion ?? hoveredRegion
     for (const r of REGIONS) {

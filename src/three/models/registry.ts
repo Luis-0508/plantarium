@@ -1,5 +1,7 @@
 import * as THREE from 'three'
 import type { AnatomyRegion, Plant } from '../../data/types'
+import { generateCalathea } from './calathea'
+import { generateDracaena } from './dracaena'
 import { createRng } from './geometry'
 import { generatePalm } from './palm'
 import { generateRoots } from './roots'
@@ -35,7 +37,11 @@ export function buildProceduralGeometry(plant: Plant): PlantGeometry {
   const shoot =
     params.type === 'rosette'
       ? generateRosette(rng, params, soilY)
-      : generatePalm(rng, params, soilY, plant.pot.radius)
+      : params.type === 'palm'
+        ? generatePalm(rng, params, soilY, plant.pot.radius)
+        : params.type === 'calathea'
+          ? generateCalathea(rng, params, soilY, plant.pot.radius)
+          : generateDracaena(rng, params, soilY, plant.pot.radius)
 
   const roots = generateRoots({
     rng: createRng(seed * 31 + 5),

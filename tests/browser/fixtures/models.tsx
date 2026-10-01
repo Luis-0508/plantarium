@@ -22,7 +22,7 @@ export function Models() {
   const fallback = plants[0].model
   if (fallback.kind !== 'procedural') throw new Error('Expected procedural fixture')
   const [plant, setPlant] = useState<Plant>({ ...plants[0], model: { kind: 'gltf', url: '/fixture/missing.gltf', fallback } })
-  const anim = useRef<StageAnim>({ grow: 1, pot: 1, ghost: 0, soil: 1, stipple: 0, reveal: 0, shadow: 1,
+  const anim = useRef<StageAnim>({ grow: 1, pose: 0, pot: 1, ghost: 0, soil: 1, stipple: 0, reveal: 0, shadow: 1,
     highlight: { leaf: 0, stem: 0, crown: 0, soil: 0, roots: 0 } })
   return <>
     <button onClick={() => { setPlant({ ...plant, model: { kind: 'gltf', url: '/fixture/valid.gltf', fallback } }) }}>Load working model</button>

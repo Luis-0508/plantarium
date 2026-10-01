@@ -66,7 +66,9 @@ The interface is in German; the code and documentation are in English.
 **Interactive specimens.** Orbit, zoom, reset and fullscreen. The pot can be
 shown, made transparent or hidden, and the soil made transparent, to see how
 the plant sits in its container. Switching plants plays a short
-shrink-and-regrow transition; foliage moves in a light wind.
+shrink-and-regrow transition; foliage moves in a light wind. Plants with sleep movements
+(`nyctinasty: true`, such as the Calathea) get a time-of-day switch: the leaves
+lie open in the morning and fold upright in the evening.
 
 **Three views of the same plant.**
 - *Plant* shows the specimen as it would stand in a room.
@@ -155,8 +157,11 @@ src/
       registry.ts     Builds and caches geometry per plant, bounds, hotspot snapping
       rosette.ts      Rosette generator (Chlorophytum)
       palm.ts         Clustering pinnate palm generator (Dypsis, Chamaedorea)
+      calathea.ts     Petiolate leaf clump, two-sided patterned blades (Goeppertia)
+      dracaena.ts     Ringed trunks forking into branches with leaf heads (Dracaena)
       roots.ts        Root growth as constrained random walks inside the pot
-      geometry.ts     Mesh builder for ribbons and tubes
+      geometry.ts     Mesh builder for ribbons and tubes; optional per-vertex leaf
+                      motion (pivot, axis, angle) applied in the foliage shader
       rng.ts          Seeded PRNG
   ui/               DOM interface: panel, controls, comparison, glyphs
     viz/              Small SVG data graphics (gauges, scales, calendar, soil mix, roots)
@@ -168,8 +173,10 @@ never touches the scene directly.
 
 ## Plant data
 
-Three species are currently included: Grünlilie (*Chlorophytum comosum*),
-Goldfruchtpalme (*Dypsis lutescens*) and Bergpalme (*Chamaedorea elegans*).
+Five species are currently included: Grünlilie (*Chlorophytum comosum*),
+Goldfruchtpalme (*Dypsis lutescens*), Bergpalme (*Chamaedorea elegans*),
+Pfauen-Korbmarante (*Goeppertia makoyana*) and Drachenbaum (*Dracaena
+marginata*).
 
 Each entry carries a `dataQuality` field:
 
@@ -189,7 +196,7 @@ until real sources are consulted; missing references remain unverified. See
 
 ## Procedural generation
 
-Two growth forms are implemented:
+Four growth forms are implemented:
 
 - **Rosette** (`rosette.ts`): channelled strap leaves in a phyllotactic spiral
   with an optional pale central stripe, plus arching runners carrying
@@ -197,6 +204,11 @@ Two growth forms are implemented:
 - **Palm** (`palm.ts`): clustering canes with ring scars, pinnate fronds with
   arching rachises, drooping and irregularly spaced leaflets, age yellowing
   and basal suckers. Used for both palms with different parameters.
+- **Calathea** (`calathea.ts`): a dense clump of oval blades on thin petioles,
+  with a patterned upper layer and a wine-red underside layer. Each blade
+  carries a rotation about its pulvinus, so it rises in the evening pose.
+- **Dracaena** (`dracaena.ts`): ringed woody trunks that fork at a knobbly node
+  into near-vertical branches, each topped by a fountain of narrow leaves.
 
 Each generator returns geometry for leaves, stems and crown, plus the points
 where roots emerge. `roots.ts` then grows the root system from those points:
@@ -214,8 +226,8 @@ the same species.
 1. Add a `Plant` entry to `src/data/plants.ts`. All UI reads from this entry.
    Keep `dataQuality: 'placeholder'` until the values have been reviewed.
 2. Choose a model:
-   - **Procedural**: set `model.kind: 'procedural'` with `generator: 'rosette'`
-     or `'palm'`, tune `params` and pick a `seed`. For a new growth form, add a
+   - **Procedural**: set `model.kind: 'procedural'` with `generator: 'rosette'`,
+     `'palm'`, `'calathea'` or `'dracaena'`, tune `params` and pick a `seed`. For a new growth form, add a
      generator in `src/three/models/` that returns `leaves`, `stems`, `crown`
      and `rootOrigins`, and dispatch it in `registry.ts`.
    - **GLB**: see below.

@@ -6,8 +6,8 @@ import { InfoPanel } from './ui/InfoPanel'
 import { StageOverlay } from './ui/StageOverlay'
 import { StageBoundary, StageFailure } from './ui/StageBoundary'
 import { useHashNavigation } from './useHashNavigation'
-import { AnatomyCard, CameraTools, ModeSwitch, PlantSelector, VesselToggles } from './ui/StageControls'
-import type { CameraCommand, PotOption, SoilOption, ViewMode } from './viewTypes'
+import { AnatomyCard, CameraTools, DayToggle, ModeSwitch, PlantSelector, VesselToggles } from './ui/StageControls'
+import type { CameraCommand, DayTime, PotOption, SoilOption, ViewMode } from './viewTypes'
 
 // three.js + drei are the bulk of the bundle; load the stage separately so
 // the specimen sheet and controls paint immediately.
@@ -31,6 +31,7 @@ export default function App() {
   const [mode, setMode] = useState<ViewMode>('plant')
   const [potOption, setPotOption] = useState<PotOption>('solid')
   const [soilOption, setSoilOption] = useState<SoilOption>('solid')
+  const [dayTime, setDayTime] = useState<DayTime>('morning')
   const [selectedRegion, setSelectedRegion] = useState<AnatomyRegion | null>(null)
   const [hoveredRegion, setHoveredRegion] = useState<AnatomyRegion | null>(null)
   const [command, setCommand] = useState<CameraCommand | null>(null)
@@ -132,6 +133,7 @@ export default function App() {
                     mode={mode}
                     potOption={potOption}
                     soilOption={soilOption}
+                    dayTime={dayTime}
                     selectedRegion={selectedRegion}
                     hoveredRegion={hoveredRegion}
                     onHoverRegion={setHoveredRegion}
@@ -181,6 +183,7 @@ export default function App() {
 
             {mode === 'plant' && (
               <div className="stage__vessel">
+                {plant.nyctinasty && <DayToggle value={dayTime} onChange={setDayTime} />}
                 <VesselToggles pot={potOption} soil={soilOption} onPot={setPotOption} onSoil={setSoilOption} />
               </div>
             )}
