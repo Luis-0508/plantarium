@@ -76,6 +76,49 @@ function glyphPaths(plant: Plant) {
         }
       }
     }
+  } else if (model.kind === 'procedural' && model.params.type === 'calathea') {
+    // Fan of long petioles, each holding an oval blade with its midrib.
+    const n = 7
+    for (let i = 0; i < n; i++) {
+      const a = ((i / (n - 1)) * 2 - 1) * 0.75 + rng.range(-0.06, 0.06)
+      const L = 52 * (1 - Math.abs(a) * 0.3) * rng.range(0.9, 1.05)
+      const tx = x0 + Math.sin(a) * L * 0.75
+      const ty = baseY - Math.cos(a) * L
+      paths.push({ d: `M${x0} ${baseY}Q${(x0 + Math.sin(a) * L * 0.2).toFixed(1)} ${(baseY - L * 0.6).toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)}`, w: 1.1 })
+      const b = a * 1.7
+      const len = 36 * rng.range(0.9, 1.05)
+      const ex = tx + Math.sin(b) * len
+      const ey = ty - Math.cos(b) * len
+      const nx = Math.cos(b) * 13
+      const ny = Math.sin(b) * 13
+      const mx = (tx + ex) / 2
+      const my = (ty + ey) / 2
+      const pt = (x: number, y: number) => `${x.toFixed(1)} ${y.toFixed(1)}`
+      paths.push({ d: `M${pt(tx, ty)}Q${pt(mx + nx, my + ny)} ${pt(ex, ey)}Q${pt(mx - nx, my - ny)} ${pt(tx, ty)}`, w: 1.3 })
+      paths.push({ d: `M${pt(tx, ty)}L${pt(ex, ey)}`, w: 0.7 })
+    }
+  } else if (model.kind === 'procedural' && model.params.type === 'dracaena') {
+    // Slender canes of staggered height, each crowned by a starburst tuft.
+    const p = model.params
+    const heightScale = 100 / (Math.max(...p.canes) + p.leafLength * 0.55)
+    p.canes.forEach((h, c) => {
+      const f = p.canes.length > 1 ? c / (p.canes.length - 1) : 0.5
+      const bx = x0 + (f - 0.5) * 8
+      const tx = bx + (c % 2 === 0 ? -1 : 1) * (6 + c * 4)
+      const ty = baseY - h * heightScale
+      paths.push({ d: `M${bx.toFixed(1)} ${baseY}Q${(bx + (tx - bx) * 1.4).toFixed(1)} ${(baseY - h * heightScale * 0.55).toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)}`, w: 1.7 })
+      const leaves = 13
+      for (let i = 0; i < leaves; i++) {
+        const a = ((i / (leaves - 1)) * 2 - 1) * 2.3 + rng.range(-0.08, 0.08)
+        const L = p.leafLength * heightScale * (1 - Math.abs(a) * 0.12) * rng.range(0.85, 1.05)
+        const droop = Math.abs(a) > 1.1 ? L * 0.35 : 0
+        const ex = tx + Math.sin(a) * L
+        const ey = ty - Math.cos(a) * L + droop
+        const cx = tx + Math.sin(a) * L * 0.6
+        const cy = ty - Math.cos(a) * L * 0.6 - L * 0.12
+        paths.push({ d: `M${tx.toFixed(1)} ${ty.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}`, w: 1 })
+      }
+    })
   }
   return paths
 }

@@ -85,8 +85,11 @@ const TRAITS: Trait[] = [
 const PERSON =
   'M50 0a7 7 0 1 1 0 14a7 7 0 1 1 0-14zM41 17h18q6 0 7 7l4 27q.5 3-2.5 3.5t-3.5-2.5l-4-24v74q0 3-3.5 3t-3.5-3v-42h-2v42q0 3-3.5 3t-3.5-3v-74l-4 24q-.5 3-3.5 2.5t-2.5-3.5l4-27q1-7 7-7z'
 
+const COUNT_WORDS: Record<number, string> = { 2: 'Zwei', 3: 'Drei', 4: 'Vier', 5: 'Fünf', 6: 'Sechs', 7: 'Sieben', 8: 'Acht', 9: 'Neun', 10: 'Zehn' }
+
 function Lineup({ plants, onOpen }: { plants: Plant[]; onOpen: (id: string) => void }) {
-  const domain = 250
+  // Axis reaches the tallest plant, rounded up to the next 50 cm gridline.
+  const domain = Math.ceil(Math.max(170, ...plants.map((p) => p.dimensions.maxIndoorHeightCm.max)) / 50) * 50
   const H = 280
   const base = H - 30
   const top = 14
@@ -96,12 +99,12 @@ function Lineup({ plants, onOpen }: { plants: Plant[]; onOpen: (id: string) => v
   const W = 60 + slot * (plants.length + 1)
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="lineup" role="img" aria-label="Maximale Höhe im Raum, maßstäblich neben einer 170 cm großen Person">
-      {[0, 50, 100, 150, 200, 250].map((cm) => (
+      {Array.from({ length: domain / 50 + 1 }, (_, k) => k * 50).map((cm) => (
         <g key={cm}>
           <line x1={46} x2={W - 10} y1={y(cm)} y2={y(cm)} className={cm === 0 ? 'viz-axis' : 'viz-grid'} />
           <text x={38} y={y(cm) + 4} textAnchor="end" className="viz-text">
             {cm}
-            {cm === 250 ? ' cm' : ''}
+            {cm === domain ? ' cm' : ''}
           </text>
         </g>
       ))}
@@ -138,7 +141,7 @@ export function Comparison({ plants, onOpen }: { plants: Plant[]; onOpen: (id: s
   return (
     <main className="compare">
       <header className="compare__head">
-        <h1>Drei Arten im Vergleich</h1>
+        <h1>{COUNT_WORDS[plants.length] ?? plants.length} Arten im Vergleich</h1>
         <p>
           Balken zeigen, was eine Pflanze toleriert, der Punkt ihren Idealwert. Ein Klick auf einen Namen öffnet die Pflanze im 3D-Modell.
         </p>

@@ -30,7 +30,7 @@ export interface AnatomyNote {
 
 export interface ProceduralModelRef {
   kind: 'procedural'
-  generator: 'rosette' | 'palm'
+  generator: 'rosette' | 'palm' | 'calathea' | 'dracaena'
   params: ProceduralParams
   seed: number
 }
@@ -42,7 +42,7 @@ export interface ProceduralModelRef {
  */
 export type ModelRef = ProceduralModelRef | { kind: 'gltf'; url: string; rootsUrl?: string; fallback?: ProceduralModelRef }
 
-export type ProceduralParams = RosetteParams | PalmParams
+export type ProceduralParams = RosetteParams | PalmParams | CalatheaParams | DracaenaParams
 
 export interface RosetteParams {
   type: 'rosette'
@@ -87,8 +87,40 @@ export interface PalmParams {
   rings: boolean
 }
 
+export interface CalatheaParams {
+  type: 'calathea'
+  leafCount: number
+  petioleLength: [number, number]
+  bladeLength: number
+  /** Half-width of the blade at its widest point (m). */
+  bladeWidth: number
+  /** Dark feather-shaped patches per side of the midrib. */
+  patches: number
+  groundColor: string
+  patchColor: string
+  /** Wine-red underside, drawn as a second layer below the blade. */
+  undersideColor: string
+  petioleColor: string
+}
+
+export interface DracaenaParams {
+  type: 'dracaena'
+  /** Height of each cane above the soil (m); one leaf head per cane. */
+  canes: number[]
+  caneRadius: number
+  /** Canes that fork below the top into a second, shorter head. */
+  forks: number
+  leavesPerHead: number
+  leafLength: number
+  /** Half-width of the strap leaf (m). */
+  leafWidth: number
+  leafColor: string
+  marginColor: string
+  barkColor: string
+}
+
 export interface RootProfile {
-  structure: 'tuberous' | 'fibrous' | 'clumping-fibrous'
+  structure: 'tuberous' | 'fibrous' | 'clumping-fibrous' | 'rhizomatous'
   structureLabel: string
   structureNote: string
   /** Typical rooting depth in a pot, cm. */

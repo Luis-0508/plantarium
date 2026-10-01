@@ -35,8 +35,10 @@ export class MeshBuilder {
     keel?: number
     twist?: number
     sideHint?: THREE.Vector3
+    /** Shift along the leaf normal (m); negative values lie below the blade. */
+    offset?: number
   }) {
-    const { spine, width, columns, color, keel = 0, twist = 0 } = opts
+    const { spine, width, columns, color, keel = 0, twist = 0, offset = 0 } = opts
     const n = spine.length
     const base = this.vertexCount
     const side = new THREE.Vector3()
@@ -61,7 +63,7 @@ export class MeshBuilder {
       for (const s of columns) {
         p.copy(spine[i]).addScaledVector(side, s * w)
         // Channel: edges lift along the leaf normal.
-        p.addScaledVector(normal, keel * w * s * s)
+        p.addScaledVector(normal, keel * w * s * s + offset)
         this.pushVertex(p, color(t, s))
       }
     }

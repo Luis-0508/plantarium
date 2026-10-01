@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent } from 'react'
+import { useEffect, useRef, type KeyboardEvent } from 'react'
 import type { AnatomyRegion, Plant } from '../data/types'
 import type { PotOption, SoilOption, ViewMode } from '../viewTypes'
 import { CloseIcon, CollapseIcon, ExpandIcon, MinusIcon, PlusIcon, ResetIcon } from './icons'
@@ -49,8 +49,29 @@ export function ModeSwitch({ mode, onChange }: { mode: ViewMode; onChange: (m: V
 }
 
 export function PlantSelector({ plants, activeId, onSelect }: { plants: Plant[]; activeId: string; onSelect: (id: string) => void }) {
+  const nav = useRef<HTMLElement>(null)
+
+  // On narrow screens the strip scrolls; keep the active plant in view.
+  useEffect(() => {
+    const center = (behavior: ScrollBehavior) => {
+      const strip = nav.current
+      const item = strip?.querySelector<HTMLElement>('.is-active')
+      if (!strip || !item || strip.scrollWidth <= strip.clientWidth) return
+      const offset = item.getBoundingClientRect().left - strip.getBoundingClientRect().left
+      strip.scrollTo({ left: strip.scrollLeft + offset - (strip.clientWidth - item.offsetWidth) / 2, behavior })
+    }
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    center(reduced ? 'auto' : 'smooth')
+    // Item widths change once the web fonts arrive; re-centre without animation.
+    let live = true
+    if (document.fonts.status !== 'loaded') document.fonts.ready.then(() => live && center('auto'))
+    return () => {
+      live = false
+    }
+  }, [activeId])
+
   return (
-    <nav className="selector" aria-label="Pflanze wählen">
+    <nav ref={nav} className="selector" aria-label="Pflanze wählen">
       {plants.map((p) => (
         <button
           key={p.id}

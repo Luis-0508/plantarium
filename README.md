@@ -49,6 +49,8 @@ src/
       registry.ts   Builds and caches geometry per plant, bounds, hotspot snapping
       rosette.ts    Rosette generator (Chlorophytum)
       palm.ts       Clustering pinnate palm generator (Dypsis, Chamaedorea)
+      calathea.ts   Petiolate leaf clump with patterned two-sided blades (Goeppertia)
+      dracaena.ts   Woody canes with terminal leaf tufts (Dracaena marginata)
       roots.ts      Root growth as constrained random walks inside the pot
       geometry.ts   Mesh builder for ribbons and tubes
   ui/               Panel, controls, comparison, glyphs, small data graphics
@@ -60,8 +62,8 @@ src/
    Set `dataQuality: 'placeholder'` until the values have been reviewed; the
    specimen sheet then shows a short note.
 2. Choose a model:
-   - **Procedural**: set `model.kind: 'procedural'` with `generator: 'rosette'`
-     or `'palm'` and tune `params`. For a new growth form, add a generator in
+   - **Procedural**: set `model.kind: 'procedural'` with `generator: 'rosette'`,
+     `'palm'`, `'calathea'` or `'dracaena'` and tune `params`. For a new growth form, add a generator in
      `src/three/models/` that returns `leaves`, `stems`, `crown` and
      `rootOrigins`, and dispatch it in `registry.ts`.
    - **GLB/GLTF**: see below.
