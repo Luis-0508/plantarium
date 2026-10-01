@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
 
 permissions:
   contents: read
@@ -15,7 +14,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Lint and build
+    name: Lint, build and test
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -35,3 +34,21 @@ jobs:
 
       - name: Type-check and build
         run: npm run build
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser tests
+        run: npm run test:browser
+
+      - name: Retain browser failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-test-results
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore

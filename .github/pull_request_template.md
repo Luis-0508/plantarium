@@ -22,6 +22,7 @@
 
 - [ ] `npm run lint` passes
 - [ ] `npm run build` passes
+- [ ] `npm test` and `npm run test:browser` pass
 - [ ] Responsive layout checked (desktop and narrow/mobile), if UI changed
 - [ ] Keyboard use, focus and reduced motion considered, if UI changed
 - [ ] Procedural output stays deterministic for existing seeds, if geometry changed

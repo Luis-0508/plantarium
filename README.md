@@ -168,6 +168,12 @@ Each entry carries a `dataQuality` field:
   yet reviewed. The specimen sheet shows a short note for these entries.
 - `reviewed`: values checked against cited sources.
 
+Reusable sources live in `src/data/sources.ts` (ID, title, author/organization,
+URL, access date and optional notes). Plants may reference them by subject in
+`sourceRefs`: `care`, `dimensions`, `roots` and `anatomy`. The catalog is empty
+until real sources are consulted; missing references remain unverified. See
+[source-reference guidance](CONTRIBUTING.md#source-references) before reviewing data.
+
 > [!IMPORTANT]
 > All current care, size and root values are `placeholder`. They are
 > plausible starting points, not authoritative horticultural advice.
@@ -237,10 +243,14 @@ npm install
 npm run dev      # http://localhost:5173
 npm run lint     # oxlint
 npm run build    # type-check and production build into dist/
+npm test         # data and procedural geometry invariants
+npx playwright install chromium # once, before browser tests
+npm run test:browser # desktop, tablet and mobile smoke checks
 ```
 
-`npm run preview` serves the production build. CI runs lint and build on every
-push to `main` and every pull request; there is no automated test suite yet.
+`npm run preview` serves the production build. CI runs lint, build, unit tests
+and Chromium browser tests on every push to `main` and every pull request.
+`npm run test:watch` runs the unit suite during development.
 
 Built with [Vite](https://vite.dev/), [React 19](https://react.dev/),
 TypeScript, [three.js](https://threejs.org/),
@@ -257,7 +267,7 @@ order:
 - Reviewed, sourced horticultural data replacing the placeholder values
 - A broader plant catalogue
 - GLB support tested end to end, including root-view effects and hotspot snapping
-- Automated tests, starting with the deterministic geometry generators
+- Broader real-device performance and browser compatibility coverage
 - Adaptive rendering quality for lower-end devices
 - Simulated growth of shoot and roots over time
 

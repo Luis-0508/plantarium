@@ -26,6 +26,7 @@ const WANDER_CHANGE = 0.3
  */
 export function generateRoots(ctx: RootContext): THREE.BufferGeometry {
   const { rng, potHeight: H, potRadius: R, profile, origins } = ctx
+  if (origins.length === 0) throw new Error('Root generation requires at least one origin')
   const m = profile.model
   const builder = new MeshBuilder()
   const soilY = soilLevel(H)
@@ -90,7 +91,7 @@ export function generateRoots(ctx: RootContext): THREE.BufferGeometry {
     const az = rng.range(0, Math.PI * 2)
     const dip = rng.range(0.35, 1.35)
     const dir = new THREE.Vector3(Math.cos(az) * Math.cos(dip), -Math.sin(dip), Math.sin(az) * Math.cos(dip))
-    const depthY = Math.max(floorY, soilY - (soilY - maxDepthY) * rng.range(0.75, 1.02))
+    const depthY = Math.max(floorY, soilY - (soilY - maxDepthY) * rng.range(0.75, 1))
     const length = (soilY - depthY) * rng.range(1.3, 2.2)
     const bulges = m.tubers
       ? Array.from({ length: rng.int(1, 3) }, () => ({ at: rng.range(0.3, 0.88), size: rng.range(0.6, 1.3), w: rng.range(0.06, 0.12) }))
@@ -133,5 +134,21 @@ export function generateRoots(ctx: RootContext): THREE.BufferGeometry {
     }
   }
 
-  return builder.build()
+  // Walks constrain tube centres. Project the complete surface as well: tilted
+  // rings and overlapping tuber swellings can otherwise cross the wall or the
+  // declared spread. Interior vertices retain their original coordinates.
+  const geometry = builder.build()
+  const positions = geometry.getAttribute('position')
+  for (let i = 0; i < positions.count; i++) {
+    const y = THREE.MathUtils.clamp(positions.getY(i), maxDepthY, soilY)
+    const x = positions.getX(i)
+    const z = positions.getZ(i)
+    const radius = Math.hypot(x, z)
+    const limit = Math.min(innerRadiusAt(y, H, R), spread)
+    const scale = radius > limit ? limit / radius : 1
+    positions.setXYZ(i, x * scale, y, z * scale)
+  }
+  geometry.computeVertexNormals()
+  geometry.computeBoundingSphere()
+  return geometry
 }
