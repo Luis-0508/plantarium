@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { NumericRange, Span } from '../../data/types'
+import { useI18n } from '../../i18n/context'
 
 const W = 320
 const PAD = 10
@@ -80,8 +81,9 @@ export function RangeAxis({
 
 /** Discrete meter made of repeated glyphs, e.g. five leaves for difficulty. */
 export function PipMeter({ value, max = 5, label, render }: { value: number; max?: number; label: string; render: (on: boolean, i: number) => ReactNode }) {
+  const { viz } = useI18n().t
   return (
-    <span className="pips" role="img" aria-label={`${label}: ${value} von ${max}`}>
+    <span className="pips" role="img" aria-label={viz.of(label, value, max)}>
       {Array.from({ length: max }, (_, i) => (
         <span key={i} className={i < value ? 'pip is-on' : 'pip'}>
           {render(i < value, i)}
@@ -93,9 +95,10 @@ export function PipMeter({ value, max = 5, label, render }: { value: number; max
 
 /** Five-step bar meter for root density or sensitivity. */
 export function StepMeter({ value, label, low, high }: { value: number; label: string; low: string; high: string }) {
+  const { viz } = useI18n().t
   return (
     <div className="step-meter">
-      <div className="step-meter__bars" role="img" aria-label={`${label}: ${value} von 5`}>
+      <div className="step-meter__bars" role="img" aria-label={viz.of(label, value, 5)}>
         {Array.from({ length: 5 }, (_, i) => (
           <span key={i} className={i < value ? 'is-on' : ''} style={{ height: `${40 + i * 15}%` }} />
         ))}

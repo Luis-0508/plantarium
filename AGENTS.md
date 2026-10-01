@@ -6,8 +6,10 @@ architecture and `CONTRIBUTING.md` for workflows.
 ## Language
 
 - Code, comments, docs, filenames, commits, branches and PRs: English.
-- User-facing app text (UI labels, plant data, `index.html` metadata): German.
-  Keep it German; do not translate it.
+- User-facing app text (UI labels, plant data, `index.html` metadata) is
+  bilingual: English (default) and German. UI strings live in
+  `src/i18n/messages.ts`; plant texts are `Localized` (`{ en, de }`). Always
+  update both languages together. Documentation screenshots use English.
 
 ## Architecture
 

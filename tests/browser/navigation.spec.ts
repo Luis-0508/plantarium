@@ -11,10 +11,10 @@ test('synchronizes direct links, selection, history, hash edits and the wordmark
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto('/#pflanze/bergpalme')
   await expect(page.locator('.stage')).toHaveAttribute('data-plant-id', 'bergpalme')
-  await page.getByRole('navigation', { name: 'Pflanze wählen' }).getByRole('button', { name: /Grünlilie/ }).click()
+  await page.getByRole('navigation', { name: 'Choose plant' }).getByRole('button', { name: /Spider Plant/ }).click()
   await expect(page).toHaveURL(/#pflanze\/gruenlilie$/)
   await expect(page.locator('.stage')).toHaveAttribute('data-plant-id', 'gruenlilie')
-  await page.getByRole('button', { name: 'Vergleichen', exact: true }).click()
+  await page.getByRole('button', { name: 'Compare', exact: true }).click()
   await expect(page).toHaveURL(/#vergleich\/gruenlilie$/)
   await page.goBack()
   await expect(page.locator('.stage')).toHaveAttribute('data-plant-id', 'gruenlilie')
@@ -24,14 +24,14 @@ test('synchronizes direct links, selection, history, hash edits and the wordmark
   await expect(page.locator('.stage')).toHaveAttribute('data-plant-id', 'gruenlilie')
   await page.evaluate(() => { window.location.hash = '#pflanze/goldfruchtpalme' })
   await expect(page.locator('.stage')).toHaveAttribute('data-plant-id', 'goldfruchtpalme')
-  await page.getByRole('button', { name: 'Vergleichen', exact: true }).click()
+  await page.getByRole('button', { name: 'Compare', exact: true }).click()
   await page.getByRole('link', { name: 'Plantarium' }).click()
   await expect(page).toHaveURL(/#pflanze\/goldfruchtpalme$/)
   const historyLength = await page.evaluate(() => history.length)
   await page.getByRole('link', { name: 'Plantarium' }).click()
   expect(await page.evaluate(() => history.length)).toBe(historyLength)
   await page.reload()
-  await expect(page.getByRole('heading', { name: 'Goldfruchtpalme', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Areca Palm', exact: true })).toBeVisible()
   await page.evaluate(() => { window.location.hash = '#pflanze/not-a-plant' })
   await expect(page).toHaveURL(/#pflanze\/gruenlilie$/)
   await expect(page.locator('.stage')).toHaveAttribute('data-plant-id', 'gruenlilie')
@@ -48,14 +48,14 @@ test('keeps every anatomy region reachable and honors reduced motion', async ({ 
   })
   await page.goto('/#pflanze/bergpalme')
   await page.keyboard.press('2')
-  await expect(page.getByRole('radio', { name: 'Wurzeln', exact: true })).toBeChecked()
-  await expect(page.getByText('Maße gelten für eine Pflanze im empfohlenen Topf.')).toBeVisible()
-  await expect(page.locator('.ruler-note').filter({ hasText: 'Wurzeltiefe' })).toBeVisible()
+  await expect(page.getByRole('radio', { name: 'Roots', exact: true })).toBeChecked()
+  await expect(page.getByText('Measurements apply to a plant in the recommended pot.')).toBeVisible()
+  await expect(page.locator('.ruler-note').filter({ hasText: 'Root depth' })).toBeVisible()
   if (testInfo.project.name === 'desktop') await expect(page.locator('.panel__scroll')).toHaveAttribute('data-scroll-behavior', 'instant')
   if (!process.env.CI) await page.screenshot({ path: testInfo.outputPath('root-context.png') })
   await page.keyboard.press('3')
-  const selector = page.getByRole('combobox', { name: 'Pflanzenteil wählen' })
-  const titles = ['Fiederwedel', 'Stämmchen', 'Blattscheiden', 'Substrat', 'Faserwurzeln']
+  const selector = page.getByRole('combobox', { name: 'Choose plant part' })
+  const titles = ['Pinnate frond', 'Canes', 'Leaf sheaths', 'Substrate', 'Fibrous roots']
   if (testInfo.project.name !== 'desktop') {
     await expect(selector).toBeVisible()
     expect((await selector.boundingBox())!.height).toBeGreaterThanOrEqual(44)
@@ -76,14 +76,14 @@ test('keeps every anatomy region reachable and honors reduced motion', async ({ 
   await expect(page.locator('.anatomy__card')).toBeVisible()
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
   if (!process.env.CI) await page.screenshot({ path: testInfo.outputPath('anatomy-access.png'), animations: 'disabled' })
-  await page.getByRole('button', { name: 'Erklärung schließen' }).click()
+  await page.getByRole('button', { name: 'Close explanation' }).click()
   await expect(page.locator('.anatomy__card')).toHaveCount(0)
   if (testInfo.project.name !== 'desktop') await expect(selector).toBeFocused()
-  await page.getByRole('radio', { name: 'Anatomie', exact: true }).focus()
+  await page.getByRole('radio', { name: 'Anatomy', exact: true }).focus()
   await page.keyboard.press('ArrowLeft')
-  await expect(page.getByRole('radio', { name: 'Wurzeln', exact: true })).toBeChecked()
+  await expect(page.getByRole('radio', { name: 'Roots', exact: true })).toBeChecked()
   await page.keyboard.press('1')
-  await expect(page.getByRole('radio', { name: 'Pflanze', exact: true })).toBeChecked()
+  await expect(page.getByRole('radio', { name: 'Plant', exact: true })).toBeChecked()
 })
 
 test('commits visible plant information together during animated and rapid changes', async ({ page }) => {
@@ -91,7 +91,7 @@ test('commits visible plant information together during animated and rapid chang
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/#pflanze/bergpalme')
   await expect(page.locator('canvas')).toBeVisible()
-  await page.getByRole('radio', { name: 'Anatomie', exact: true }).click()
+  await page.getByRole('radio', { name: 'Anatomy', exact: true }).click()
   await expect(page.locator('.hotspot').first()).toBeVisible()
   const frames = await page.evaluate(async () => {
     const samples: { id?: string; title?: string; panel: string | null; busy: string | null }[] = []
@@ -110,9 +110,9 @@ test('commits visible plant information together during animated and rapid chang
   })
   expect(frames.some((f) => f.id === 'bergpalme' && f.busy === 'true')).toBe(true)
   for (const frame of frames) {
-    const title = frame.id === 'bergpalme' ? 'Bergpalme' : 'Goldfruchtpalme'
+    const title = frame.id === 'bergpalme' ? 'Parlor Palm' : 'Areca Palm'
     expect(frame.title).toBe(title)
-    expect(frame.panel).toBe(`Steckbrief ${title}`)
+    expect(frame.panel).toBe(`Specimen sheet: ${title}`)
   }
   await page.evaluate(() => {
     const buttons = document.querySelectorAll<HTMLButtonElement>('.selector button')
@@ -127,13 +127,13 @@ test('commits visible plant information together during animated and rapid chang
 test('does not replay a zoom command when the view changes', async ({ page }) => {
   await page.goto('/#pflanze/bergpalme')
   await page.keyboard.press('2')
-  await expect(page.locator('.ruler-note').filter({ hasText: 'Wurzeltiefe' })).toBeVisible()
-  const depthAnchor = page.locator('.anchor').filter({ hasText: 'Wurzeltiefe' })
+  await expect(page.locator('.ruler-note').filter({ hasText: 'Root depth' })).toBeVisible()
+  const depthAnchor = page.locator('.anchor').filter({ hasText: 'Root depth' })
   const initialTransform = await depthAnchor.evaluate((el) => (el as HTMLElement).style.transform)
-  await page.getByRole('button', { name: 'Heranzoomen', exact: true }).click()
+  await page.getByRole('button', { name: 'Zoom in', exact: true }).click()
   await expect.poll(() => depthAnchor.evaluate((el) => (el as HTMLElement).style.transform)).not.toBe(initialTransform)
   await page.keyboard.press('3')
-  await expect(page.getByRole('radio', { name: 'Anatomie', exact: true })).toBeChecked()
+  await expect(page.getByRole('radio', { name: 'Anatomy', exact: true })).toBeChecked()
   await page.keyboard.press('2')
   // A view change resets framing; the previous zoom command must not replay.
   await expect.poll(() => depthAnchor.evaluate((el) => (el as HTMLElement).style.transform)).toBe(initialTransform)

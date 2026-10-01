@@ -29,6 +29,6 @@ test('recovers from a failed GLTF after a URL change on the same plant', async (
 test('contains a render exception in the stage boundary', async ({ page }) => {
   test.skip(test.info().project.name !== 'desktop', 'Error boundary is viewport independent')
   await page.goto('/tests/browser/fixtures/models.html?throw')
-  await expect(page.getByText('Die 3D-Ansicht konnte nicht geladen werden.', { exact: false })).toBeVisible()
+  await expect(page.getByText('The 3D view could not be loaded.', { exact: false })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Load working model' })).toBeVisible()
 })

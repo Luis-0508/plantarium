@@ -38,7 +38,8 @@ What makes it technically interesting:
 - **Scale awareness.** Pot size, rooting depth and indoor height are real
   dimensions, used both in the 3D scene and in the to-scale comparison.
 
-The interface is in German; the code and documentation are in English.
+The interface is available in English (default) and German, switchable in the
+header; the code and documentation are in English.
 
 ## Screenshots
 
@@ -52,7 +53,7 @@ The interface is in German; the code and documentation are in English.
     <td><b>Anatomy view.</b> Hotspots and region picking on the model, with an explanation card per region.</td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/comparison-view.webp" alt="Comparison page with a to-scale height lineup of three plants next to a person silhouette"></td>
+    <td><img src="docs/screenshots/comparison-view.webp" alt="Comparison page with a to-scale height lineup of five plants next to a person silhouette"></td>
     <td align="center"><img src="docs/screenshots/mobile-plant-view.webp" alt="Plantarium on a phone-sized screen showing a parlor palm" width="200"></td>
   </tr>
   <tr>
@@ -88,6 +89,11 @@ person for reference, plus trait plots on shared axes.
 
 **Responsive layout.** The stage and specimen sheet sit side by side on wide
 screens and stack below 900 px, on portrait tablets and phones.
+
+**English and German.** A switch in the header changes all interface text and
+plant descriptions between English (the default) and German. The choice is
+remembered in the browser, and the page language (`lang`), title and
+description follow it.
 
 **Keyboard and accessibility.** `1` `2` `3` switch views, `R` resets the
 camera, `+`/`-` zoom and `Esc` closes the anatomy card. The view switch is an
@@ -144,7 +150,11 @@ src/
   App.tsx           Pages, view state, keyboard shortcuts, URL hash
   data/             What a plant is
     types.ts          Plant schema (metadata, care, dimensions, roots, anatomy, model ref)
-    plants.ts         The dataset
+    plants.ts         The dataset, with English and German texts
+  i18n/             Interface language
+    messages.ts       UI strings per language (English is the reference)
+    context.ts        Locale context, `useI18n()` and the stored language choice
+    LocaleProvider.tsx  Provides the locale and syncs `lang`, title and description
   three/            How a plant is staged
     Stage.tsx         Canvas, lights, camera framing per view
     Specimen.tsx      Pot + plant + roots, view transitions, plant switching, picking
@@ -173,10 +183,16 @@ never touches the scene directly.
 
 ## Plant data
 
-Five species are currently included: Grünlilie (*Chlorophytum comosum*),
-Goldfruchtpalme (*Dypsis lutescens*), Bergpalme (*Chamaedorea elegans*),
-Pfauen-Korbmarante (*Goeppertia makoyana*) and Drachenbaum (*Dracaena
+Five species are currently included: spider plant (*Chlorophytum comosum*),
+areca palm (*Dypsis lutescens*), parlor palm (*Chamaedorea elegans*), peacock
+plant (*Goeppertia makoyana*) and Madagascar dragon tree (*Dracaena
 marginata*).
+
+Every user-facing text in an entry (names, notes, anatomy, soil components) is
+a `Localized` value with one string per language, e.g.
+`commonName: { en: 'Spider Plant', de: 'Grünlilie' }`. Interface strings live
+in `src/i18n/messages.ts`; the dataset tests require every language to be
+filled in.
 
 Each entry carries a `dataQuality` field:
 
@@ -224,7 +240,8 @@ the same species.
 ## Adding a plant
 
 1. Add a `Plant` entry to `src/data/plants.ts`. All UI reads from this entry.
-   Keep `dataQuality: 'placeholder'` until the values have been reviewed.
+   Write every text in English and German. Keep `dataQuality: 'placeholder'`
+   until the values have been reviewed.
 2. Choose a model:
    - **Procedural**: set `model.kind: 'procedural'` with `generator: 'rosette'`,
      `'palm'`, `'calathea'` or `'dracaena'`, tune `params` and pick a `seed`. For a new growth form, add a

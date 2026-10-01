@@ -1,4 +1,5 @@
 import type { NumericRange } from '../../data/types'
+import { useI18n } from '../../i18n/context'
 
 const START = -120
 const SWEEP = 240
@@ -20,6 +21,7 @@ function arc(from: number, to: number, r = R) {
 /** Radial gauge: tolerated and ideal relative humidity, with a heated-room reference. */
 export function HumidityGauge({ ideal, tolerated }: { ideal: NumericRange; tolerated: NumericRange }) {
   const heated = 35
+  const { viz } = useI18n().t
   const [hx1, hy1] = polar(heated, R - 12)
   const [hx2, hy2] = polar(heated, R + 7)
   return (
@@ -27,7 +29,7 @@ export function HumidityGauge({ ideal, tolerated }: { ideal: NumericRange; toler
       viewBox="0 0 112 96"
       className="gauge"
       role="img"
-      aria-label={`Luftfeuchte ideal ${ideal.min} bis ${ideal.max} Prozent, toleriert ${tolerated.min} bis ${tolerated.max} Prozent`}
+      aria-label={viz.humidityLabel(ideal.min, ideal.max, tolerated.min, tolerated.max)}
     >
       <path d={arc(0, 100)} className="gauge__track" />
       <path d={arc(tolerated.min, tolerated.max)} className="gauge__soft" />
@@ -42,7 +44,7 @@ export function HumidityGauge({ ideal, tolerated }: { ideal: NumericRange; toler
         {ideal.min}–{ideal.max}
       </text>
       <text x={C} y={C + 15} textAnchor="middle" className="viz-text">
-        % rel. Feuchte
+        {viz.humidityUnit}
       </text>
       <text x={polar(0, R + 2)[0]} y={92} textAnchor="middle" className="viz-text">0</text>
       <text x={polar(100, R + 2)[0]} y={92} textAnchor="middle" className="viz-text">100</text>

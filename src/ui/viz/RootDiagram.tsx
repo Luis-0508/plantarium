@@ -1,4 +1,5 @@
 import type { RootProfile } from '../../data/types'
+import { useI18n } from '../../i18n/context'
 
 /**
  * Cross-section to scale: recommended pot depth, rooting depth and lateral
@@ -6,6 +7,7 @@ import type { RootProfile } from '../../data/types'
  */
 export function RootDiagram({ roots }: { roots: RootProfile }) {
   const S = 3
+  const { viz } = useI18n().t
   const potDepth = roots.recommendedPotDepthCm.max
   const potTop = 18
   const cx = 100
@@ -20,7 +22,7 @@ export function RootDiagram({ roots }: { roots: RootProfile }) {
   const height = bottom + 26
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="root-diagram" role="img" aria-label={`Wurzeltiefe ${roots.depthCm} cm, Ausbreitung ${roots.spreadCm} cm, empfohlene Topftiefe ${roots.recommendedPotDepthCm.min} bis ${roots.recommendedPotDepthCm.max} cm`}>
+    <svg viewBox={`0 0 ${width} ${height}`} className="root-diagram" role="img" aria-label={viz.rootLabel(roots.depthCm, roots.spreadCm, roots.recommendedPotDepthCm.min, roots.recommendedPotDepthCm.max)}>
       <defs>
         <pattern id="root-hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
           <line x1="0" y1="0" x2="0" y2="5" className="root-diagram__hatch" />
@@ -39,7 +41,7 @@ export function RootDiagram({ roots }: { roots: RootProfile }) {
       {/* rooting depth */}
       <line x1={cx - roots.spreadCm * S} x2={cx + roots.spreadCm * S} y1={depthY} y2={depthY} className="root-diagram__depth" />
       <text x={cx} y={depthY - 5} textAnchor="middle" className="viz-text viz-text--strong viz-text--halo">
-        {roots.depthCm} cm tief
+        {viz.rootDepth(roots.depthCm)}
       </text>
 
       {/* spread */}
@@ -54,7 +56,7 @@ export function RootDiagram({ roots }: { roots: RootProfile }) {
       <path d={`M${width - 12} ${potTop}h4V${bottom}h-4`} className="viz-axis" />
       <line x1={width - 16} x2={width - 4} y1={minY} y2={minY} className="viz-tick" />
       <text x={width - 14} y={potTop - 6} textAnchor="end" className="viz-text">
-        Topf {roots.recommendedPotDepthCm.min}–{roots.recommendedPotDepthCm.max} cm
+        {viz.pot(roots.recommendedPotDepthCm.min, roots.recommendedPotDepthCm.max)}
       </text>
     </svg>
   )
