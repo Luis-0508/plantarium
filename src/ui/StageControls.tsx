@@ -1,18 +1,16 @@
 import { useEffect, useRef, type KeyboardEvent } from 'react'
 import type { AnatomyRegion, Plant } from '../data/types'
+import { useI18n } from '../i18n/context'
 import type { DayTime, PotOption, SoilOption, ViewMode } from '../viewTypes'
 import { CloseIcon, CollapseIcon, ExpandIcon, MinusIcon, PlusIcon, ResetIcon } from './icons'
 import { PlantGlyph } from './PlantGlyph'
 
-const MODES: { id: ViewMode; label: string; hint: string }[] = [
-  { id: 'plant', label: 'Pflanze', hint: 'Wuchs und Blätter' },
-  { id: 'roots', label: 'Wurzeln', hint: 'Blick unter die Erde' },
-  { id: 'anatomy', label: 'Anatomie', hint: 'Teile der Pflanze erklärt' },
-]
+const MODES: ViewMode[] = ['plant', 'roots', 'anatomy']
 
 /** ARIA radio group: arrow keys move between views, Tab leaves the group. */
 export function ModeSwitch({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode) => void }) {
-  const index = MODES.findIndex((m) => m.id === mode)
+  const { t } = useI18n()
+  const index = MODES.indexOf(mode)
   const buttons = useRef<(HTMLButtonElement | null)[]>([])
 
   const onKeyDown = (e: KeyboardEvent) => {
@@ -20,28 +18,28 @@ export function ModeSwitch({ mode, onChange }: { mode: ViewMode; onChange: (m: V
     if (!step) return
     e.preventDefault()
     const next = (index + step + MODES.length) % MODES.length
-    onChange(MODES[next].id)
+    onChange(MODES[next])
     buttons.current[next]?.focus()
   }
 
   return (
-    <div className="modes" role="radiogroup" aria-label="Ansicht" onKeyDown={onKeyDown}>
+    <div className="modes" role="radiogroup" aria-label={t.modes.group} onKeyDown={onKeyDown}>
       <span className="modes__thumb" style={{ transform: `translateX(${index * 100}%)` }} aria-hidden />
       {MODES.map((m, i) => (
         <button
-          key={m.id}
+          key={m}
           ref={(el) => {
             buttons.current[i] = el
           }}
           type="button"
           role="radio"
-          aria-checked={mode === m.id}
-          tabIndex={mode === m.id ? 0 : -1}
-          className={mode === m.id ? 'is-active' : ''}
-          onClick={() => onChange(m.id)}
-          title={`${m.hint} (Taste ${i + 1})`}
+          aria-checked={mode === m}
+          tabIndex={mode === m ? 0 : -1}
+          className={mode === m ? 'is-active' : ''}
+          onClick={() => onChange(m)}
+          title={t.modes.key(t.modes[m].hint, i + 1)}
         >
-          {m.label}
+          {t.modes[m].label}
         </button>
       ))}
     </div>
@@ -50,6 +48,7 @@ export function ModeSwitch({ mode, onChange }: { mode: ViewMode; onChange: (m: V
 
 export function PlantSelector({ plants, activeId, onSelect }: { plants: Plant[]; activeId: string; onSelect: (id: string) => void }) {
   const nav = useRef<HTMLElement>(null)
+  const { t, l } = useI18n()
 
   // On narrow screens the strip scrolls; keep the active plant in view.
   useEffect(() => {
@@ -71,7 +70,7 @@ export function PlantSelector({ plants, activeId, onSelect }: { plants: Plant[];
   }, [activeId])
 
   return (
-    <nav ref={nav} className="selector" aria-label="Pflanze wählen">
+    <nav ref={nav} className="selector" aria-label={t.selector}>
       {plants.map((p) => (
         <button
           key={p.id}
@@ -82,7 +81,7 @@ export function PlantSelector({ plants, activeId, onSelect }: { plants: Plant[];
         >
           <PlantGlyph plant={p} className="selector__glyph" />
           <span className="selector__names">
-            <span className="selector__common">{p.commonName}</span>
+            <span className="selector__common">{l(p.commonName)}</span>
             <span className="selector__botanical">{p.botanicalName}</span>
           </span>
         </button>
@@ -101,19 +100,21 @@ interface ToolsProps {
 }
 
 export function CameraTools({ onZoomIn, onZoomOut, onReset, onFullscreen, fullscreen }: ToolsProps) {
+  const { camera } = useI18n().t
+  const fullscreenLabel = fullscreen ? camera.exitFullscreen : camera.fullscreen
   return (
-    <div className="tools" role="toolbar" aria-label="Kamera">
-      <button type="button" onClick={onZoomIn} aria-label="Heranzoomen" title="Heranzoomen">
+    <div className="tools" role="toolbar" aria-label={camera.group}>
+      <button type="button" onClick={onZoomIn} aria-label={camera.zoomIn} title={camera.zoomIn}>
         <PlusIcon />
       </button>
-      <button type="button" onClick={onZoomOut} aria-label="Herauszoomen" title="Herauszoomen">
+      <button type="button" onClick={onZoomOut} aria-label={camera.zoomOut} title={camera.zoomOut}>
         <MinusIcon />
       </button>
-      <button type="button" onClick={onReset} aria-label="Kamera zurücksetzen" title="Kamera zurücksetzen (R)">
+      <button type="button" onClick={onReset} aria-label={camera.reset} title={camera.resetKey}>
         <ResetIcon />
       </button>
       {onFullscreen && (
-        <button type="button" onClick={onFullscreen} aria-label={fullscreen ? 'Vollbild beenden' : 'Vollbild'} title={fullscreen ? 'Vollbild beenden' : 'Vollbild'}>
+        <button type="button" onClick={onFullscreen} aria-label={fullscreenLabel} title={fullscreenLabel}>
           {fullscreen ? <CollapseIcon /> : <ExpandIcon />}
         </button>
       )}
@@ -121,7 +122,6 @@ export function CameraTools({ onZoomIn, onZoomOut, onReset, onFullscreen, fullsc
   )
 }
 
-const POT_LABEL: Record<PotOption, string> = { solid: 'sichtbar', ghost: 'durchsichtig', hidden: 'aus' }
 const NEXT_POT: Record<PotOption, PotOption> = { solid: 'ghost', ghost: 'hidden', hidden: 'solid' }
 
 /** Pot and soil visibility; shown in the plant view only. */
@@ -136,17 +136,20 @@ export function VesselToggles({
   onPot: (p: PotOption) => void
   onSoil: (s: SoilOption) => void
 }) {
+  const { vessel } = useI18n().t
+  const nextSoil: SoilOption = soil === 'solid' ? 'transparent' : 'solid'
   return (
-    <div className="vessel" aria-label="Topf und Erde">
-      <button type="button" onClick={() => onPot(NEXT_POT[pot])} aria-label={`Topf: ${POT_LABEL[pot]}. Umschalten auf ${POT_LABEL[NEXT_POT[pot]]}`}>
-        Topf <em>{POT_LABEL[pot]}</em>
+    <div className="vessel" aria-label={vessel.group}>
+      <button type="button" onClick={() => onPot(NEXT_POT[pot])}
+        aria-label={vessel.switchTo(vessel.pot, vessel.potState[pot], vessel.potState[NEXT_POT[pot]])}>
+        {vessel.pot} <em>{vessel.potState[pot]}</em>
       </button>
       <button
         type="button"
-        onClick={() => onSoil(soil === 'solid' ? 'transparent' : 'solid')}
-        aria-label={`Erde: ${soil === 'solid' ? 'sichtbar' : 'durchsichtig'}. Umschalten`}
+        onClick={() => onSoil(nextSoil)}
+        aria-label={vessel.switchTo(vessel.soil, vessel.soilState[soil], vessel.soilState[nextSoil])}
       >
-        Erde <em>{soil === 'solid' ? 'sichtbar' : 'durchsichtig'}</em>
+        {vessel.soil} <em>{vessel.soilState[soil]}</em>
       </button>
     </div>
   )
@@ -155,16 +158,16 @@ export function VesselToggles({
 /** Time of day for plants whose leaves rise at night; the leaves animate to the new pose. */
 export function DayToggle({ value, onChange }: { value: DayTime; onChange: (d: DayTime) => void }) {
   const next: DayTime = value === 'morning' ? 'evening' : 'morning'
-  const label = { morning: 'morgens', evening: 'abends' }
+  const { day, vessel } = useI18n().t
   return (
     <div className="vessel vessel--day">
       <button
         type="button"
         onClick={() => onChange(next)}
-        aria-label={`Tageszeit: ${label[value]}. Umschalten auf ${label[next]}`}
-        title="Morgens liegen die Blätter flach, abends richten sie sich auf."
+        aria-label={vessel.switchTo(day.label, day[value], day[next])}
+        title={day.title}
       >
-        Tageszeit <em>{label[value]}</em>
+        {day.label} <em>{day[value]}</em>
       </button>
     </div>
   )
@@ -185,6 +188,7 @@ export function AnatomyCard({
   disabled?: boolean
 }) {
   const mobileSelect = useRef<HTMLSelectElement>(null)
+  const { t, l } = useI18n()
   const buttons = useRef<Partial<Record<AnatomyRegion, HTMLButtonElement | null>>>({})
   const previousRegion = useRef(selected)
   useEffect(() => {
@@ -200,11 +204,11 @@ export function AnatomyCard({
   return (
     <div className="anatomy">
       <label className="anatomy__mobile">
-        <span className="visually-hidden">Pflanzenteil wählen</span>
+        <span className="visually-hidden">{t.anatomy.choose}</span>
         <select ref={mobileSelect} value={selected ?? ''} disabled={disabled}
           onChange={(event) => onSelect(notes.find((n) => n.region === event.target.value)?.region ?? null)}>
-          <option value="">Pflanzenteil wählen …</option>
-          {notes.map((n) => <option key={n.region} value={n.region}>{n.title}</option>)}
+          <option value="">{t.anatomy.chooseOption}</option>
+          {notes.map((n) => <option key={n.region} value={n.region}>{l(n.title)}</option>)}
         </select>
       </label>
       <ul className="anatomy__regions">
@@ -212,7 +216,7 @@ export function AnatomyCard({
           <li key={n.region}>
             <button type="button" ref={(element) => { buttons.current[n.region] = element }} disabled={disabled}
               aria-pressed={n.region === selected} className={n.region === selected ? 'is-active' : ''} onClick={() => onSelect(n.region === selected ? null : n.region)}>
-              {n.title}
+              {l(n.title)}
             </button>
           </li>
         ))}
@@ -220,15 +224,15 @@ export function AnatomyCard({
       {note ? (
         <article className="anatomy__card" key={note.region} aria-live="polite">
           <header>
-            <h3>{note.title}</h3>
-            <button type="button" className="anatomy__close" onClick={() => onSelect(null)} aria-label="Erklärung schließen">
+            <h3>{l(note.title)}</h3>
+            <button type="button" className="anatomy__close" onClick={() => onSelect(null)} aria-label={t.anatomy.close}>
               <CloseIcon size={16} />
             </button>
           </header>
-          <p>{note.text}</p>
+          <p>{l(note.text)}</p>
         </article>
       ) : (
-        <p className="anatomy__hint">Einen Punkt an der Pflanze wählen oder direkt auf Blatt, Stamm, Erde oder Wurzeln zeigen.</p>
+        <p className="anatomy__hint">{t.anatomy.hint}</p>
       )}
     </div>
   )

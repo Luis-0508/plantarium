@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { plants } from '../../src/data/plants'
 import { sources } from '../../src/data/sources'
-import type { NumericRange, ProceduralModelRef } from '../../src/data/types'
+import type { Locale, Localized, NumericRange, ProceduralModelRef } from '../../src/data/types'
 
 const regions = ['leaf', 'stem', 'crown', 'soil', 'roots']
 const sections = ['care', 'dimensions', 'roots', 'anatomy']
@@ -22,6 +22,11 @@ const integer = (value: number, min: number, max = Infinity) => {
 const range = ({ min, max }: NumericRange) => {
   expect(Number.isFinite(min) && Number.isFinite(max)).toBe(true)
   expect(min).toBeLessThanOrEqual(max)
+}
+const locales: Locale[] = ['en', 'de']
+const text = (value: Localized) => {
+  expect(Object.keys(value).sort()).toEqual([...locales].sort())
+  for (const locale of locales) expect(value[locale].trim()).not.toBe('')
 }
 const tuple = ([min, max]: [number, number], integers = false) => {
   range({ min, max })
@@ -104,7 +109,7 @@ describe('plant dataset', () => {
         for (const month of months) integer(month, 1, 12)
       }
       expect(c.soil.mix.length).toBeGreaterThan(0)
-      for (const part of c.soil.mix) { positive(part.share); normalized(part.share); expect(part.name.trim()).not.toBe('') }
+      for (const part of c.soil.mix) { positive(part.share); normalized(part.share); text(part.name) }
       expect(c.soil.mix.reduce((sum, part) => sum + part.share, 0)).toBeCloseTo(1, 6)
       for (const v of [p.pot.height, p.pot.radius, p.dimensions.specimenHeight, p.dimensions.maxSpreadCm,
         p.dimensions.maxIndoorHeightCm.min, p.roots.depthCm, p.roots.spreadCm, p.roots.recommendedPotDepthCm.min]) positive(v)
@@ -116,11 +121,14 @@ describe('plant dataset', () => {
       normalized(p.roots.model.branching)
       expect(p.anatomy.map((n) => n.region).sort()).toEqual([...regions].sort())
       for (const note of p.anatomy) {
-        expect(note.title.trim()).not.toBe('')
-        expect(note.text.trim()).not.toBe('')
+        text(note.title)
+        text(note.text)
         expect(note.anchor).toHaveLength(3)
         expect(note.anchor.every(Number.isFinite)).toBe(true)
       }
+      for (const v of [p.commonName, p.family, p.origin, p.summary, c.lightNote, c.waterNote, c.difficultyNote,
+        c.toxicity.note, c.soil.description, c.fertilizing.interval, c.fertilizing.note, c.repotting.interval,
+        c.repotting.note, p.roots.structureLabel, p.roots.structureNote]) text(v)
       if (p.model.kind === 'procedural') model(p.model)
       else {
         expect(p.model.url.trim()).not.toBe('')

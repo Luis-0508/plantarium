@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { AnatomyRegion, Plant } from '../data/types'
+import { useI18n } from '../i18n/context'
 import { anchorRef, hotspotId } from '../three/anchorRegistry'
 import { rulerLayout } from '../three/rulerLayout'
 import type { ViewMode } from '../viewTypes'
@@ -18,6 +19,7 @@ interface Props {
  */
 export function StageOverlay({ plant, mode, selected, hovered, onSelect }: Props) {
   const ruler = useMemo(() => rulerLayout(plant), [plant])
+  const { t, l } = useI18n()
 
   return (
     <div className="overlay" key={`${plant.id}-${mode}`}>
@@ -30,11 +32,11 @@ export function StageOverlay({ plant, mode, selected, hovered, onSelect }: Props
                 type="button"
                 className={`hotspot${active ? ' is-active' : ''}${hovered === note.region ? ' is-hovered' : ''}`}
                 aria-pressed={active}
-                aria-label={note.title}
+                aria-label={l(note.title)}
                 onClick={() => onSelect(active ? null : note.region)}
               >
                 <span className="hotspot__dot" />
-                <span className="hotspot__label">{note.title}</span>
+                <span className="hotspot__label">{l(note.title)}</span>
               </button>
             </div>
           )
@@ -47,13 +49,13 @@ export function StageOverlay({ plant, mode, selected, hovered, onSelect }: Props
             {label.kind === 'depth' && (
               <span className="ruler-note">
                 <strong>{plant.roots.depthCm} cm</strong>
-                <span>Wurzeltiefe</span>
+                <span>{t.ruler.depth}</span>
               </span>
             )}
             {label.kind === 'spread' && (
               <span className="ruler-note ruler-note--center">
                 <strong>Ø {plant.roots.spreadCm * 2} cm</strong>
-                <span>Ausbreitung der Wurzeln</span>
+                <span>{t.ruler.spread}</span>
               </span>
             )}
           </div>

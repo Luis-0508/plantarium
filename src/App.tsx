@@ -1,6 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { getPlant, plants } from './data/plants'
 import type { AnatomyRegion } from './data/types'
+import { LOCALES, useI18n } from './i18n/context'
 import { Comparison } from './ui/Comparison'
 import { InfoPanel } from './ui/InfoPanel'
 import { StageOverlay } from './ui/StageOverlay'
@@ -38,6 +39,7 @@ export default function App() {
   const [fullscreen, setFullscreen] = useState(false)
   const stageRef = useRef<HTMLDivElement>(null)
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+  const { locale, setLocale, t, l } = useI18n()
 
   // Reset route-specific interaction before the next route can paint with a
   // region selected from the previous plant.
@@ -106,14 +108,22 @@ export default function App() {
         }}>
           Plantarium
         </a>
-        <nav className="pages" aria-label="Bereiche">
+        <nav className="pages" aria-label={t.app.sections}>
           <button type="button" aria-current={page === 'explore' ? 'page' : undefined} onClick={() => navigate({ page: 'explore', plantId })}>
-            Erkunden
+            {t.app.explore}
           </button>
           <button type="button" aria-current={page === 'compare' ? 'page' : undefined} onClick={() => navigate({ page: 'compare', plantId })}>
-            Vergleichen
+            {t.app.compare}
           </button>
         </nav>
+        <div className="locales" role="group" aria-label={t.app.language}>
+          {LOCALES.map((option) => (
+            <button key={option.id} type="button" lang={option.id} aria-label={option.name} title={option.name}
+              aria-pressed={locale === option.id} onClick={() => setLocale(option.id)}>
+              {option.label}
+            </button>
+          ))}
+        </div>
       </header>
 
       {page === 'compare' ? (
@@ -125,7 +135,7 @@ export default function App() {
             <div className="stage__backdrop stage__backdrop--cyan" aria-hidden />
             <div className="stage__canvas">
               <StageBoundary fallback={<StageFailure plantId={plantId} onPlantSwap={setShownId} />}>
-                <Suspense fallback={<p className="stage__loading" role="status">Präparat wird vorbereitet …</p>}>
+                <Suspense fallback={<p className="stage__loading" role="status">{t.app.loading}</p>}>
                   <Stage
                     plant={plant}
                     requestedPlant={requestedPlant}
@@ -148,11 +158,13 @@ export default function App() {
             {!changingPlant && <StageOverlay plant={plant} mode={mode} selected={selectedRegion} hovered={hoveredRegion} onSelect={setSelectedRegion} />}
 
             <div className="stage__title" key={plant.id}>
-              <h1>{plant.commonName}</h1>
+              <h1>{l(plant.commonName)}</h1>
               <p className="stage__botanical">{plant.botanicalName}</p>
-              <p className="stage__english">{plant.englishName}</p>
+              {LOCALES.filter((option) => option.id !== locale).map((option) => (
+                <p key={option.id} className="stage__alt-name" lang={option.id}>{plant.commonName[option.id]}</p>
+              ))}
               {mode === 'roots' && (
-                <p className="stage__caption">Maße gelten für eine Pflanze im empfohlenen Topf.</p>
+                <p className="stage__caption">{t.app.rootsCaption}</p>
               )}
             </div>
 

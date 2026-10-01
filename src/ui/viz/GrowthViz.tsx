@@ -1,13 +1,13 @@
 import type { Plant } from '../../data/types'
+import { useI18n } from '../../i18n/context'
 import { PlantGlyph } from '../PlantGlyph'
-
-const LABELS = ['Langsam', 'Mittel', 'Schnell']
 
 /** Three sprouts of increasing vigour; the plant's growth rate is inked in. */
 export function GrowthScale({ level }: { level: 1 | 2 | 3 }) {
+  const { viz } = useI18n().t
   return (
-    <div className="growth" role="img" aria-label={`Wachstum: ${LABELS[level - 1]}`}>
-      {LABELS.map((label, i) => {
+    <div className="growth" role="img" aria-label={viz.growthLabel(viz.growthLevels[level - 1])}>
+      {viz.growthLevels.map((label, i) => {
         const h = 14 + i * 9
         const on = i + 1 === level
         return (
@@ -29,13 +29,14 @@ export function GrowthScale({ level }: { level: 1 | 2 | 3 }) {
 /** Plant at its maximum indoor height next to a 170 cm person, to scale. */
 export function HeightDiagram({ plant }: { plant: Plant }) {
   const max = plant.dimensions.maxIndoorHeightCm.max
+  const { viz } = useI18n().t
   const domain = Math.max(200, Math.ceil(max / 50) * 50)
   const H = 120
   const y = (cm: number) => H - (cm / domain) * (H - 8)
   // Glyph viewBox is 132 tall with the plant body spanning ~108 units incl. pot.
   const glyphH = (max / domain) * (H - 8) * (132 / 120)
   return (
-    <svg viewBox={`0 0 150 ${H + 4}`} className="height-diagram" role="img" aria-label={`Maximale Höhe im Raum ${max} cm, im Vergleich zu einer 170 cm großen Person`}>
+    <svg viewBox={`0 0 150 ${H + 4}`} className="height-diagram" role="img" aria-label={viz.heightLabel(max)}>
       {Array.from({ length: domain / 50 + 1 }, (_, i) => i * 50).map((cm) => (
         <g key={cm}>
           <line x1={34} x2={146} y1={y(cm)} y2={y(cm)} className={cm === 0 ? 'viz-axis' : 'viz-grid'} />

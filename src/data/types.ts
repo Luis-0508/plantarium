@@ -5,6 +5,12 @@
 
 export type Level = 1 | 2 | 3 | 4 | 5
 
+/** Languages of the interface and of all user-facing plant text. */
+export type Locale = 'en' | 'de'
+
+/** User-facing text in every supported language. */
+export type Localized = Record<Locale, string>
+
 /** A normalised 0–1 range on a qualitative scale (e.g. deep shade → full sun). */
 export interface Span {
   min: number
@@ -22,8 +28,8 @@ export type AnatomyRegion = 'leaf' | 'stem' | 'crown' | 'soil' | 'roots'
 
 export interface AnatomyNote {
   region: AnatomyRegion
-  title: string
-  text: string
+  title: Localized
+  text: Localized
   /** Hotspot anchor in model space (metres, pot rim centre = y 0). */
   anchor: [number, number, number]
 }
@@ -127,8 +133,8 @@ export interface DracaenaParams {
 
 export interface RootProfile {
   structure: 'tuberous' | 'fibrous' | 'clumping-fibrous' | 'rhizomatous'
-  structureLabel: string
-  structureNote: string
+  structureLabel: Localized
+  structureNote: Localized
   /** Typical rooting depth in a pot, cm. */
   depthCm: number
   /** Lateral spread in cm (radius from crown). */
@@ -154,7 +160,7 @@ export interface MonthPlan {
 }
 
 export interface SoilComponent {
-  name: string
+  name: Localized
   share: number
 }
 
@@ -172,12 +178,11 @@ export type SourceSection = 'care' | 'dimensions' | 'roots' | 'anatomy'
 
 export interface Plant {
   id: string
-  commonName: string
-  englishName: string
+  commonName: Localized
   botanicalName: string
-  family: string
-  origin: string
-  summary: string
+  family: Localized
+  origin: Localized
+  summary: Localized
   /** Identifying colour in comparisons and legends. */
   swatch: string
   /**
@@ -197,19 +202,19 @@ export interface Plant {
   care: {
     /** 0 = deep shade, 1 = direct sun. */
     light: Span
-    lightNote: string
+    lightNote: Localized
     /** 0 = keep dry, 1 = keep wet. */
     water: Span
-    waterNote: string
+    waterNote: Localized
     temperature: { ideal: NumericRange; minimum: number; maximum: number }
     humidity: { ideal: NumericRange; tolerated: NumericRange }
-    growth: { level: 1 | 2 | 3; label: string; perYearCm: NumericRange }
+    growth: { level: 1 | 2 | 3; perYearCm: NumericRange }
     difficulty: Level
-    difficultyNote: string
-    toxicity: { cats: boolean; dogs: boolean; humans: boolean; note: string }
-    soil: { description: string; mix: SoilComponent[]; ph: NumericRange }
-    fertilizing: { interval: string; note: string }
-    repotting: { interval: string; years: NumericRange; note: string }
+    difficultyNote: Localized
+    toxicity: { cats: boolean; dogs: boolean; humans: boolean; note: Localized }
+    soil: { description: Localized; mix: SoilComponent[]; ph: NumericRange }
+    fertilizing: { interval: Localized; note: Localized }
+    repotting: { interval: Localized; years: NumericRange; note: Localized }
     schedule: MonthPlan
   }
 

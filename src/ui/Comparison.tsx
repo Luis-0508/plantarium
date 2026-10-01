@@ -1,4 +1,6 @@
 import type { Plant } from '../data/types'
+import { useI18n } from '../i18n/context'
+import type { Messages } from '../i18n/messages'
 import { PlantGlyph } from './PlantGlyph'
 import { niceAxis, validTrait } from './comparison-scale'
 
@@ -12,76 +14,76 @@ interface Trait {
 
 const lvl = (v: number, max = 5) => (v - 1) / (max - 1)
 
-function traitsFor(plants: Plant[]): Trait[] {
+function traitsFor(plants: Plant[], t: Messages['compare'], l: ReturnType<typeof useI18n>['l'], growthLevels: string[]): Trait[] {
   const temperature = niceAxis(Math.min(5, ...plants.map((p) => p.care.temperature.minimum)), Math.max(35, ...plants.map((p) => p.care.temperature.maximum)))
   const rootDepth = niceAxis(0, Math.max(1, ...plants.map((p) => p.roots.depthCm))).max
   return [
   {
-    label: 'Licht',
-    ends: ['Schatten', 'Sonne'],
+    label: t.light,
+    ends: [t.shade, t.sun],
     value: (p) => [p.care.light.min, p.care.light.ideal, p.care.light.max],
-    describe: (p) => p.care.lightNote,
+    describe: (p) => l(p.care.lightNote),
   },
   {
-    label: 'Wasser',
-    ends: ['trocken', 'nass'],
+    label: t.water,
+    ends: [t.dry, t.wet],
     value: (p) => [p.care.water.min, p.care.water.ideal, p.care.water.max],
-    describe: (p) => p.care.waterNote,
+    describe: (p) => l(p.care.waterNote),
   },
   {
-    label: 'Luftfeuchte',
+    label: t.humidity,
     ends: ['0 %', '100 %'],
     value: (p) => {
       const h = p.care.humidity.ideal
       return [h.min / 100, (h.min + h.max) / 200, h.max / 100]
     },
-    describe: (p) => `ideal ${p.care.humidity.ideal.min}–${p.care.humidity.ideal.max} %`,
+    describe: (p) => t.ideal(`${p.care.humidity.ideal.min}–${p.care.humidity.ideal.max}`, '%'),
   },
   {
-    label: 'Temperatur',
+    label: t.temperature,
     ends: [`${temperature.min} °C`, `${temperature.max} °C`],
     value: (p) => {
       const t = p.care.temperature
       const n = (v: number) => (v - temperature.min) / (temperature.max - temperature.min)
       return [n(t.minimum), n((t.ideal.min + t.ideal.max) / 2), n(t.maximum)]
     },
-    describe: (p) => `ideal ${p.care.temperature.ideal.min}–${p.care.temperature.ideal.max} °C, min. ${p.care.temperature.minimum} °C`,
+    describe: (p) => t.temperatureDetail(`${p.care.temperature.ideal.min}–${p.care.temperature.ideal.max}`, p.care.temperature.minimum),
   },
   {
-    label: 'Wachstum',
-    ends: ['langsam', 'schnell'],
+    label: t.growth,
+    ends: [t.slow, t.fast],
     value: (p) => {
       const v = lvl(p.care.growth.level, 3)
       return [v, v, v]
     },
-    describe: (p) => `${p.care.growth.label}, ${p.care.growth.perYearCm.min}–${p.care.growth.perYearCm.max} cm pro Jahr`,
+    describe: (p) => t.growthDetail(growthLevels[p.care.growth.level - 1], `${p.care.growth.perYearCm.min}–${p.care.growth.perYearCm.max}`),
   },
   {
-    label: 'Pflegeaufwand',
-    ends: ['gering', 'hoch'],
+    label: t.difficulty,
+    ends: [t.low, t.high],
     value: (p) => {
       const v = lvl(p.care.difficulty)
       return [v, v, v]
     },
-    describe: (p) => p.care.difficultyNote,
+    describe: (p) => l(p.care.difficultyNote),
   },
   {
-    label: 'Wurzeltiefe',
+    label: t.rootDepth,
     ends: ['0 cm', `${rootDepth} cm`],
     value: (p) => {
       const v = p.roots.depthCm / rootDepth
       return [v, v, v]
     },
-    describe: (p) => `${p.roots.structureLabel}, ca. ${p.roots.depthCm} cm tief`,
+    describe: (p) => t.rootDetail(l(p.roots.structureLabel), p.roots.depthCm),
   },
   {
-    label: 'Staunässe',
-    ends: ['robust', 'empfindlich'],
+    label: t.waterlogging,
+    ends: [t.robust, t.sensitive],
     value: (p) => {
       const v = lvl(p.roots.waterloggingSensitivity)
       return [v, v, v]
     },
-    describe: (p) => `Empfindlichkeit ${p.roots.waterloggingSensitivity} von 5`,
+    describe: (p) => t.sensitivity(p.roots.waterloggingSensitivity),
   },
 ]
 }
@@ -92,6 +94,7 @@ const PERSON =
 
 
 function Lineup({ plants, onOpen }: { plants: Plant[]; onOpen: (id: string) => void }) {
+  const { t, l } = useI18n()
   const { max: domain, ticks } = niceAxis(0, Math.max(170, ...plants.map((p) => p.dimensions.maxIndoorHeightCm.max)))
   const H = 280
   const base = H - 30
@@ -101,7 +104,7 @@ function Lineup({ plants, onOpen }: { plants: Plant[]; onOpen: (id: string) => v
   const slot = 170
   const W = 60 + slot * (plants.length + 1)
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ minWidth: W }} className="lineup" role="group" aria-label="Maximale Höhe im Raum, maßstäblich neben einer 170 cm großen Person">
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ minWidth: W }} className="lineup" role="group" aria-label={t.compare.lineupLabel}>
       {ticks.map((cm) => (
         <g key={cm}>
           <line x1={46} x2={W - 10} y1={y(cm)} y2={y(cm)} className={cm === 0 ? 'viz-axis' : 'viz-grid'} />
@@ -113,7 +116,7 @@ function Lineup({ plants, onOpen }: { plants: Plant[]; onOpen: (id: string) => v
       ))}
       <path d={PERSON} className="lineup__person" transform={`translate(${60 + slot * 0.5} ${y(170)}) scale(${px(170) / 101}) translate(-50 0)`} />
       <text x={60 + slot * 0.5} y={base + 18} textAnchor="middle" className="viz-text">
-        Person, 170 cm
+        {t.compare.person}
       </text>
       {plants.map((p, i) => {
         const { min, max } = p.dimensions.maxIndoorHeightCm
@@ -125,7 +128,7 @@ function Lineup({ plants, onOpen }: { plants: Plant[]; onOpen: (id: string) => v
         const bx = cx + Math.min(w * 0.42 + 8, slot / 2 - 14)
         return (
           <g key={p.id} className="lineup__plant" style={{ color: p.swatch }} role="button" tabIndex={0}
-            aria-label={`${p.commonName}: ${min}–${max} cm, im 3D-Modell öffnen`} onClick={() => onOpen(p.id)}
+            aria-label={t.compare.openPlant(l(p.commonName), `${min}–${max}`)} onClick={() => onOpen(p.id)}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen(p.id) }
             }}>
@@ -135,7 +138,7 @@ function Lineup({ plants, onOpen }: { plants: Plant[]; onOpen: (id: string) => v
               {min}–{max} cm
             </text>
             <text x={cx} y={base + 18} textAnchor="middle" className="viz-text viz-text--strong">
-              {p.commonName}
+              {l(p.commonName)}
             </text>
           </g>
         )
@@ -145,21 +148,20 @@ function Lineup({ plants, onOpen }: { plants: Plant[]; onOpen: (id: string) => v
 }
 
 export function Comparison({ plants, onOpen }: { plants: Plant[]; onOpen: (id: string) => void }) {
-  const traits = traitsFor(plants)
+  const { t: { compare: t, viz }, l } = useI18n()
+  const traits = traitsFor(plants, t, l, viz.growthLevels)
   return (
     <main className="compare">
       <header className="compare__head">
-        <h1>Pflanzen im Vergleich</h1>
-        <p>
-          Balken zeigen den angegebenen Bereich, Punkte den Idealwert oder die jeweilige Einstufung. Ein Klick auf einen Namen öffnet die Pflanze im 3D-Modell.
-        </p>
+        <h1>{t.title}</h1>
+        <p>{t.intro}</p>
         <ul className="legend">
           {plants.map((p) => (
             <li key={p.id}>
               <button type="button" onClick={() => onOpen(p.id)} style={{ color: p.swatch }}>
                 <i />
                 <span>
-                  {p.commonName} <em>{p.botanicalName}</em>
+                  {l(p.commonName)} <em>{p.botanicalName}</em>
                 </span>
               </button>
             </li>
@@ -168,37 +170,38 @@ export function Comparison({ plants, onOpen }: { plants: Plant[]; onOpen: (id: s
       </header>
 
       <section className="compare__block">
-        <h2>Größe im Raum</h2>
-        <p className="lineup-hint">Weitere Pflanzen sind bei Bedarf durch seitliches Scrollen erreichbar.</p>
-        <div className="lineup-scroll" tabIndex={0} role="region" aria-label="Größenvergleich, horizontal scrollbar">
+        <h2>{t.size}</h2>
+        <p className="lineup-hint">{t.scrollHint}</p>
+        <div className="lineup-scroll" tabIndex={0} role="region" aria-label={t.scrollRegion}>
           <Lineup plants={plants} onOpen={onOpen} />
         </div>
       </section>
 
       <section className="compare__block">
-        <h2>Ansprüche</h2>
+        <h2>{t.requirements}</h2>
         <div className={`traits${plants.length > 3 ? ' traits--many' : ''}`}>
-          {traits.map((t) => (
-            <div className="trait" key={t.label}>
-              <h3>{t.label}</h3>
+          {traits.map((trait) => (
+            <div className="trait" key={trait.label}>
+              <h3>{trait.label}</h3>
               <div className="trait__plot">
                 {plants.map((p) => {
-                  const [min, ideal, max] = t.value(p)
-                  if (!validTrait([min, ideal, max])) return <p key={p.id} className="trait__error">{p.commonName}: Angaben prüfen</p>
+                  const [min, ideal, max] = trait.value(p)
+                  const name = l(p.commonName)
+                  if (!validTrait([min, ideal, max])) return <p key={p.id} className="trait__error">{name}: {t.checkData}</p>
                   return (
-                    <div key={p.id} className="trait__lane" style={{ color: p.swatch }} title={`${p.commonName}: ${t.describe(p)}`}>
-                      {plants.length > 3 && <span className="trait__name" aria-hidden>{p.commonName}</span>}
+                    <div key={p.id} className="trait__lane" style={{ color: p.swatch }} title={`${name}: ${trait.describe(p)}`}>
+                      {plants.length > 3 && <span className="trait__name" aria-hidden>{name}</span>}
                       <span className="trait__range" style={{ left: `${min * 100}%`, width: `${Math.max(0, max - min) * 100}%` }} />
                       <span className="trait__dot" style={{ left: `${ideal * 100}%` }} />
                       <span className="visually-hidden">
-                        {p.commonName}: {t.describe(p)}
+                        {name}: {trait.describe(p)}
                       </span>
                     </div>
                   )
                 })}
                 <div className="trait__ends" aria-hidden>
-                  <span>{t.ends[0]}</span>
-                  <span>{t.ends[1]}</span>
+                  <span>{trait.ends[0]}</span>
+                  <span>{trait.ends[1]}</span>
                 </div>
               </div>
             </div>

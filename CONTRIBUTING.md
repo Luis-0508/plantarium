@@ -29,7 +29,11 @@ required. Test artifacts are written to ignored `test-results/`.
 ## Language
 
 Code, comments, documentation and Git metadata are written in English. The
-application's user-facing text and plant data are German and stay German.
+application's interface and plant data are bilingual: English (the default)
+and German. Every interface string lives in `src/i18n/messages.ts` and every
+user-facing plant text is a `Localized` value (`{ en, de }`); add or change
+both languages together. Screenshots in the documentation show the English
+interface.
 
 ## Branches, commits and pull requests
 
@@ -52,7 +56,8 @@ application's user-facing text and plant data are German and stay German.
    lives in [`src/data/types.ts`](src/data/types.ts); every panel, chart and the
    comparison page read from this entry.
 2. Give it a stable `id` (used in the URL, e.g. `#pflanze/<id>`), a distinct
-   `swatch` colour and German texts consistent with the existing entries.
+   `swatch` colour and English and German texts consistent with the existing
+   entries.
 3. Choose a model: an existing procedural generator (`rosette`, `palm`) with
    tuned `params` and a `seed`, a new generator (below), or a GLB asset (below).
 4. Add `anatomy` notes. Their `anchor` positions are hints; for procedural
