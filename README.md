@@ -1,4 +1,4 @@
-# Plantview
+# Plantarium
 
 An interactive 3D explorer for houseplants: inspect a plant in its pot, switch
 to a cyanotype-style root view, open an anatomy mode with hotspots, read care

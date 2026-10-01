@@ -96,7 +96,7 @@ export default function App() {
     <div className={`app app--${page}`}>
       <header className="masthead">
         <a className="wordmark" href="#pflanze" onClick={() => setPage('explore')}>
-          Plantview
+          Plantarium
         </a>
         <nav className="pages" aria-label="Bereiche">
           <button type="button" aria-current={page === 'explore'} onClick={() => setPage('explore')}>
