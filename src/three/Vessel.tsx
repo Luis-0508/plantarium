@@ -1,5 +1,5 @@
 import { useFrame } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { useEffect, useMemo, useRef, type RefObject } from 'react'
 import * as THREE from 'three'
 import type { StageAnim } from '../viewTypes'
 import { createGhostMaterial, createPotTexture, createRadialTexture, createSoilTexture } from './materials'
@@ -34,7 +34,7 @@ const STIPPLE_COUNT = 2200
 
 /**
  * Pot, soil body, top dressing and the root-view stipple. Built at unit size
- * and eased toward each plant's pot dimensions so plant switches morph.
+ * and sized from the active specimen, committing at the same transition point.
  */
 const STIPPLE_ROOT = new THREE.Color('#dfe7ef')
 const STIPPLE_SOIL = new THREE.Color('#4a3a2c')
@@ -51,7 +51,6 @@ export function Vessel({ radius, height, color, anim }: Props) {
   const soilBottom = useRef<THREE.MeshStandardMaterial>(null)
   const stipple = useRef<THREE.PointsMaterial>(null)
   const shadowMat = useRef<THREE.MeshBasicMaterial>(null)
-  const size = useRef({ r: radius, h: height })
 
   const potGeometry = useMemo(() => new THREE.LatheGeometry(potProfile(), 72), [])
   const soil = useMemo(() => {
@@ -87,22 +86,15 @@ export function Vessel({ radius, height, color, anim }: Props) {
     [textures, ghostMaterial],
   )
 
-  // The pot colour eases toward `color` in useFrame; JSX only sets the start.
-  const [initialColor] = useState(color)
-  const targetColor = useMemo(() => new THREE.Color(color), [color])
-
-  useFrame((_, dt) => {
+  useFrame(() => {
     const a = anim.current
     if (!a || !group.current) return
-    const k = 1 - Math.exp(-dt * 4)
-    size.current.r += (radius - size.current.r) * k
-    size.current.h += (height - size.current.h) * k
-    const { r, h } = size.current
+    const r = radius
+    const h = height
     group.current.scale.set(r, h, r)
 
     const pot = potMat.current
     if (pot) {
-      pot.color.lerp(targetColor, k)
       pot.opacity = a.pot
       pot.depthWrite = a.pot > 0.98
       pot.visible = a.pot > 0.005
@@ -138,7 +130,7 @@ export function Vessel({ radius, height, color, anim }: Props) {
     <>
       <group ref={group}>
         <mesh geometry={potGeometry} castShadow receiveShadow renderOrder={2}>
-          <meshStandardMaterial ref={potMat} color={initialColor} map={textures.pot} roughness={0.86} transparent />
+          <meshStandardMaterial ref={potMat} color={color} map={textures.pot} roughness={0.86} transparent />
         </mesh>
         <mesh ref={ghostMesh} geometry={potGeometry} material={ghostMaterial} renderOrder={4} />
         <mesh geometry={soil} userData={{ region: 'soil' }} receiveShadow renderOrder={1}>

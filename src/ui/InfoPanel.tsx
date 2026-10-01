@@ -25,7 +25,7 @@ function Row({ title, value, children, note }: { title: string; value?: string; 
 }
 
 /** Right-hand specimen sheet: care, growth and root data as small graphics. */
-export function InfoPanel({ plant, mode }: { plant: Plant; mode: ViewMode }) {
+export function InfoPanel({ plant, mode, reducedMotion = false }: { plant: Plant; mode: ViewMode; reducedMotion?: boolean }) {
   const { care, dimensions, roots } = plant
   const rootsRef = useRef<HTMLElement>(null)
   const scroller = useRef<HTMLDivElement>(null)
@@ -35,8 +35,8 @@ export function InfoPanel({ plant, mode }: { plant: Plant; mode: ViewMode }) {
   useEffect(() => {
     const el = scroller.current
     if (!el || el.scrollHeight <= el.clientHeight) return
-    el.scrollTo({ top: mode === 'roots' ? (rootsRef.current?.offsetTop ?? 0) : 0, behavior: 'smooth' })
-  }, [mode, plant.id])
+    el.scrollTo({ top: mode === 'roots' ? (rootsRef.current?.offsetTop ?? 0) : 0, behavior: reducedMotion ? 'instant' : 'smooth' })
+  }, [mode, plant.id, reducedMotion])
 
   const waterDrops = Math.round(care.water.ideal * 5 * 2) / 2
   const safe = !care.toxicity.cats && !care.toxicity.dogs && !care.toxicity.humans

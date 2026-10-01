@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent } from 'react'
+import { useEffect, useRef, type KeyboardEvent } from 'react'
 import type { AnatomyRegion, Plant } from '../data/types'
 import type { PotOption, SoilOption, ViewMode } from '../viewTypes'
 import { CloseIcon, CollapseIcon, ExpandIcon, MinusIcon, PlusIcon, ResetIcon } from './icons'
@@ -138,26 +138,48 @@ export function AnatomyCard({
   plant,
   selected,
   onSelect,
+  disabled = false,
 }: {
   plant: Plant
   selected: AnatomyRegion | null
   onSelect: (r: AnatomyRegion | null) => void
+  disabled?: boolean
 }) {
+  const mobileSelect = useRef<HTMLSelectElement>(null)
+  const buttons = useRef<Partial<Record<AnatomyRegion, HTMLButtonElement | null>>>({})
+  const previousRegion = useRef(selected)
+  useEffect(() => {
+    if (previousRegion.current && !selected && document.activeElement === document.body) {
+      const select = mobileSelect.current
+      if (select?.offsetParent) select.focus()
+      else buttons.current[previousRegion.current]?.focus()
+    }
+    previousRegion.current = selected
+  }, [selected])
   const notes = REGION_ORDER.map((r) => plant.anatomy.find((n) => n.region === r)).filter((n) => n !== undefined)
   const note = notes.find((n) => n.region === selected)
   return (
-    <div className="anatomy" aria-live="polite">
+    <div className="anatomy">
+      <label className="anatomy__mobile">
+        <span className="visually-hidden">Pflanzenteil wählen</span>
+        <select ref={mobileSelect} value={selected ?? ''} disabled={disabled}
+          onChange={(event) => onSelect(notes.find((n) => n.region === event.target.value)?.region ?? null)}>
+          <option value="">Pflanzenteil wählen …</option>
+          {notes.map((n) => <option key={n.region} value={n.region}>{n.title}</option>)}
+        </select>
+      </label>
       <ul className="anatomy__regions">
         {notes.map((n) => (
           <li key={n.region}>
-            <button type="button" className={n.region === selected ? 'is-active' : ''} onClick={() => onSelect(n.region === selected ? null : n.region)}>
+            <button type="button" ref={(element) => { buttons.current[n.region] = element }} disabled={disabled}
+              aria-pressed={n.region === selected} className={n.region === selected ? 'is-active' : ''} onClick={() => onSelect(n.region === selected ? null : n.region)}>
               {n.title}
             </button>
           </li>
         ))}
       </ul>
       {note ? (
-        <article className="anatomy__card" key={note.region}>
+        <article className="anatomy__card" key={note.region} aria-live="polite">
           <header>
             <h3>{note.title}</h3>
             <button type="button" className="anatomy__close" onClick={() => onSelect(null)} aria-label="Erklärung schließen">
