@@ -262,6 +262,9 @@ npm run test:browser # desktop, tablet and mobile smoke checks
 and Chromium browser tests on every push to `main` and every pull request.
 `npm run test:watch` runs the unit suite during development.
 
+A Remotion showcase video, captured from the running app, lives in
+[`video/`](video/README.md) as a separate npm project.
+
 Built with [Vite](https://vite.dev/), [React 19](https://react.dev/),
 TypeScript, [three.js](https://threejs.org/),
 [React Three Fiber](https://r3f.docs.pmnd.rs/) and
