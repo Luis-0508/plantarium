@@ -9,6 +9,8 @@ import { innerRadiusAt, potFloor, soilLevel } from '../../src/three/models/potSh
 import { buildProceduralGeometry, plantBounds, rootExtent } from '../../src/three/models/registry'
 import type { Plant } from '../../src/data/types'
 
+const bytes = (array: ArrayBufferView) => Buffer.from(array.buffer, array.byteOffset, array.byteLength)
+
 function generate(plant: Plant) {
   if (plant.model.kind !== 'procedural') throw new Error('Expected procedural fixture')
   const { params, seed } = plant.model
@@ -33,10 +35,10 @@ describe('procedural geometry', () => {
             const a = g.getAttribute(attribute)
             expect(a.count).toBeGreaterThan(0)
             expect(Array.from(a.array).every(Number.isFinite)).toBe(true)
-            expect(a.array).toEqual(second[part].getAttribute(attribute).array)
+            expect(bytes(a.array).equals(bytes(second[part].getAttribute(attribute).array))).toBe(true)
           }
           expect(g.index?.count).toBeGreaterThan(0)
-          expect(g.index?.array).toEqual(second[part].index?.array)
+          expect(bytes(g.index!.array).equals(bytes(second[part].index!.array))).toBe(true)
           expect(Array.from(g.index!.array).every((i) => i < g.getAttribute('position').count)).toBe(true)
           g.computeBoundingBox()
           expect([...g.boundingBox!.min.toArray(), ...g.boundingBox!.max.toArray(),

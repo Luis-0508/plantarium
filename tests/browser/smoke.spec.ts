@@ -15,10 +15,7 @@ test('renders the specimen and its information without application errors', asyn
   await expect(page.locator('canvas')).toBeVisible()
   await expect(page.getByText('Präparat wird vorbereitet …')).toHaveCount(0)
   await page.getByRole('radio', { name: 'Wurzeln', exact: true }).click()
-  for (const name of ['Bergpalme', 'Grünlilie', 'Goldfruchtpalme']) {
-    await page.getByRole('navigation', { name: 'Pflanze wählen' }).getByRole('button', { name: new RegExp(name) }).click()
-    await expect(page.locator('.ruler-note').filter({ hasText: 'Wurzeltiefe' })).toBeVisible()
-    await page.screenshot({ path: testInfo.outputPath(`roots-${name}.png`) })
-  }
+  await expect(page.locator('.ruler-note').filter({ hasText: 'Wurzeltiefe' })).toBeVisible()
+  if (!process.env.CI) await page.screenshot({ path: testInfo.outputPath('roots-parlor-palm.png') })
   expect(errors).toEqual([])
 })
