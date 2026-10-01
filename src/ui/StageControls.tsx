@@ -1,6 +1,6 @@
 import { useEffect, useRef, type KeyboardEvent } from 'react'
 import type { AnatomyRegion, Plant } from '../data/types'
-import type { PotOption, SoilOption, ViewMode } from '../viewTypes'
+import type { DayTime, PotOption, SoilOption, ViewMode } from '../viewTypes'
 import { CloseIcon, CollapseIcon, ExpandIcon, MinusIcon, PlusIcon, ResetIcon } from './icons'
 import { PlantGlyph } from './PlantGlyph'
 
@@ -147,6 +147,24 @@ export function VesselToggles({
         aria-label={`Erde: ${soil === 'solid' ? 'sichtbar' : 'durchsichtig'}. Umschalten`}
       >
         Erde <em>{soil === 'solid' ? 'sichtbar' : 'durchsichtig'}</em>
+      </button>
+    </div>
+  )
+}
+
+/** Time of day for plants whose leaves rise at night; the leaves animate to the new pose. */
+export function DayToggle({ value, onChange }: { value: DayTime; onChange: (d: DayTime) => void }) {
+  const next: DayTime = value === 'morning' ? 'evening' : 'morning'
+  const label = { morning: 'morgens', evening: 'abends' }
+  return (
+    <div className="vessel vessel--day">
+      <button
+        type="button"
+        onClick={() => onChange(next)}
+        aria-label={`Tageszeit: ${label[value]}. Umschalten auf ${label[next]}`}
+        title="Morgens liegen die Blätter flach, abends richten sie sich auf."
+      >
+        Tageszeit <em>{label[value]}</em>
       </button>
     </div>
   )

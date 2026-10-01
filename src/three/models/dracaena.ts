@@ -16,10 +16,10 @@ const LEAF_BASE = new THREE.Color('#d6d3a8')
 const COLUMNS = [1, 0.9, 0.74, 0.5, 0.24, 0, -0.24, -0.5, -0.74, -0.9, -1]
 
 /**
- * Dracaena marginata: straight, ringed woody canes of staggered height. The
- * upper part of each cane is densely set with narrow leaves that form a broad
- * fountain: the lowest spread outward and arch slightly, the youngest stand
- * upright at the tip.
+ * Dracaena marginata: straight, ringed woody trunks of staggered height, each
+ * forking at a knobbly node into two or three short branches. The upper part
+ * of each branch is densely set with narrow leaves that form a fountain: the
+ * lowest spread outward and arch slightly, the youngest stand upright.
  */
 export function generateDracaena(rng: Rng, p: DracaenaParams, soilY: number, potRadius: number) {
   const leaves = new MeshBuilder()
@@ -46,8 +46,9 @@ export function generateDracaena(rng: Rng, p: DracaenaParams, soilY: number, pot
     const ringAt = (t: number) => Math.exp(-((((((t * length) / spacing) % 1) - 0.5) / 0.16) ** 2))
     stems.addTube({
       points,
-      // Slight swelling where an old head was cut back and the cane resprouted.
-      radius: (t) => radius * (1.12 - 0.22 * t) * (1 + ringAt(t) * 0.05) * (1 + knob * Math.exp(-(((t - 0.55) / 0.05) ** 2))),
+      // Knobbly swelling at the top of a trunk, where it was cut back and
+      // resprouted into several branches.
+      radius: (t) => radius * (1.12 - 0.22 * t) * (1 + ringAt(t) * 0.05) * (1 + knob * Math.exp(-(((t - 1) / 0.07) ** 2))),
       color: (t, angle) =>
         bark
           .clone()
@@ -72,10 +73,10 @@ export function generateDracaena(rng: Rng, p: DracaenaParams, soilY: number, pot
       at.copy(cane[Math.max(0, k)]).setY(y)
       const origin = at.clone().addScaledVector(out, radius * 0.9)
 
-      const elev = THREE.MathUtils.lerp(0.62, 1.48, f ** 0.8) + rng.range(-0.12, 0.1)
+      const elev = THREE.MathUtils.lerp(0.8, 1.48, f ** 0.8) + rng.range(-0.12, 0.1)
       const dir = out.multiplyScalar(Math.cos(elev)).addScaledVector(UP, Math.sin(elev)).normalize()
       const length = p.leafLength * THREE.MathUtils.lerp(1, 0.55, f ** 1.5) * rng.range(0.85, 1.1) * scale ** 0.25
-      const droop = THREE.MathUtils.lerp(0.28, 0.02, f) * rng.range(0.7, 1.3)
+      const droop = THREE.MathUtils.lerp(0.2, 0.02, f) * rng.range(0.7, 1.3)
       const w = p.leafWidth * rng.range(0.85, 1.1)
       leaves.addRibbon({
         spine: arcSpine(origin, dir, length, droop, 18),
@@ -102,13 +103,13 @@ export function generateDracaena(rng: Rng, p: DracaenaParams, soilY: number, pot
   for (let c = 0; c < count; c++) {
     const height = p.canes[c]
     const az = c * GOLDEN_ANGLE + rng.range(-0.3, 0.3)
-    const r = count > 1 ? potRadius * 0.2 * Math.sqrt((c + 0.5) / count) : 0
+    const r = count > 1 ? potRadius * 0.22 * Math.sqrt((c + 0.5) / count) : 0
     const base = new THREE.Vector3(Math.cos(az) * r, soilY - 0.01, Math.sin(az) * r)
     rootOrigins.push(base.clone().setY(soilY))
 
-    // Nearly straight, leaning slightly outward with the head turned upright.
+    // Trunk: nearly straight, leaning slightly outward.
     const outward = new THREE.Vector3(Math.cos(az), 0, Math.sin(az))
-    const lean = outward.multiplyScalar(height * rng.range(0.04, 0.1))
+    const lean = outward.clone().multiplyScalar(height * rng.range(0.04, 0.1))
     const segs = Math.max(24, Math.ceil(height / 0.004))
     const pts: THREE.Vector3[] = []
     for (let i = 0; i <= segs; i++) {
@@ -120,17 +121,22 @@ export function generateDracaena(rng: Rng, p: DracaenaParams, soilY: number, pot
           .setY(base.y + height * t),
       )
     }
-    const radius = p.caneRadius * rng.range(0.9, 1.08) * (0.7 + 0.3 * (height / tallest))
-    addCane(pts, radius, c > 0 ? 0.3 : 0)
-    addHead(pts, radius * 0.7, c === 0 ? 1 : 0.85)
+    const radius = p.caneRadius * rng.range(0.9, 1.08) * (0.75 + 0.25 * (height / tallest))
+    addCane(pts, radius, 0.35)
 
-    // Forked canes split below the head into a second, shorter one.
-    if (c < p.forks) {
-      const at = pts[Math.round(segs * 0.55)]
-      const bdir = new THREE.Vector3(-Math.cos(az), 0, -Math.sin(az)).multiplyScalar(0.35).add(UP).normalize()
-      const branch = arcSpine(at, bdir, height * rng.range(0.3, 0.38), -0.3, 14)
-      addCane(branch, radius * 0.75, 0)
-      addHead(branch, radius * 0.55, 0.75)
+    // The trunk forks into two or three short branches, each with its own
+    // leaf head; they splay apart in a V and turn upright again.
+    const knob = pts[segs].clone().setY(pts[segs].y - radius * 0.8)
+    const n = rng.int(p.branches[0], p.branches[1])
+    const turn = rng.range(0, Math.PI * 2)
+    for (let b = 0; b < n; b++) {
+      const baz = turn + (b / n) * Math.PI * 2 + rng.range(-0.35, 0.35)
+      const tilt = rng.range(0.35, 0.6)
+      const bdir = new THREE.Vector3(Math.cos(baz) * Math.sin(tilt), Math.cos(tilt), Math.sin(baz) * Math.sin(tilt))
+      const branch = arcSpine(knob, bdir, p.branchLength * rng.range(0.75, 1.2), -0.35, 14)
+      const bradius = radius * rng.range(0.55, 0.68)
+      addCane(branch, bradius, 0)
+      addHead(branch, bradius * 0.8, rng.range(0.85, 1))
     }
   }
 

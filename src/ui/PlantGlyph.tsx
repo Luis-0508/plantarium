@@ -98,26 +98,33 @@ function glyphPaths(plant: Plant) {
       paths.push({ d: `M${pt(tx, ty)}L${pt(ex, ey)}`, w: 0.7 })
     }
   } else if (model.kind === 'procedural' && model.params.type === 'dracaena') {
-    // Slender canes of staggered height, each crowned by a starburst tuft.
+    // Trunks of staggered height fork into short branches, each crowned by
+    // an upright fountain of leaves.
     const p = model.params
-    const heightScale = 100 / (Math.max(...p.canes) + p.leafLength * 0.85)
+    const heightScale = 100 / (Math.max(...p.canes) + p.branchLength + p.leafLength * 0.85)
+    const fmt = (v: number) => v.toFixed(1)
     p.canes.forEach((h, c) => {
       const f = p.canes.length > 1 ? c / (p.canes.length - 1) : 0.5
-      const bx = x0 + (f - 0.5) * 8
-      const tx = bx + (c % 2 === 0 ? -1 : 1) * (6 + c * 4)
-      const ty = baseY - h * heightScale
-      paths.push({ d: `M${bx.toFixed(1)} ${baseY}Q${(bx + (tx - bx) * 1.4).toFixed(1)} ${(baseY - h * heightScale * 0.55).toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)}`, w: 1.7 })
-      // Upright fountain: leaves spread up to ~75° from vertical, outer ones arch slightly.
-      const leaves = 15
-      for (let i = 0; i < leaves; i++) {
-        const a = ((i / (leaves - 1)) * 2 - 1) * 1.3 + rng.range(-0.08, 0.08)
-        const L = p.leafLength * heightScale * (1 - Math.abs(a) * 0.15) * rng.range(0.85, 1.05)
-        const droop = Math.abs(a) > 0.9 ? L * 0.12 : 0
-        const ex = tx + Math.sin(a) * L
-        const ey = ty - Math.cos(a) * L + droop
-        const cx = tx + Math.sin(a) * L * 0.6
-        const cy = ty - Math.cos(a) * L * 0.6 - L * 0.12
-        paths.push({ d: `M${tx.toFixed(1)} ${ty.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}`, w: 1 })
+      const bx = x0 + (f - 0.5) * 22
+      const ky = baseY - h * heightScale
+      paths.push({ d: `M${fmt(bx)} ${baseY}L${fmt(bx)} ${fmt(ky)}`, w: 1.8 })
+      const n = c === 0 ? p.branches[1] : p.branches[0]
+      for (let b = 0; b < n; b++) {
+        const spread = n > 1 ? (b / (n - 1)) * 2 - 1 : 0
+        const L = p.branchLength * heightScale
+        const tx = bx + spread * L * 0.5
+        const ty = ky - L
+        paths.push({ d: `M${fmt(bx)} ${fmt(ky)}Q${fmt(tx)} ${fmt(ky - L * 0.3)} ${fmt(tx)} ${fmt(ty)}`, w: 1.2 })
+        const leaves = 9
+        for (let i = 0; i < leaves; i++) {
+          const a = ((i / (leaves - 1)) * 2 - 1) * 1.2 + spread * 0.25 + rng.range(-0.08, 0.08)
+          const len = p.leafLength * heightScale * (1 - Math.abs(a) * 0.2) * rng.range(0.8, 1)
+          const ex = tx + Math.sin(a) * len
+          const ey = ty - Math.cos(a) * len + (Math.abs(a) > 0.8 ? len * 0.12 : 0)
+          const cx = tx + Math.sin(a) * len * 0.6
+          const cy = ty - Math.cos(a) * len * 0.6 - len * 0.1
+          paths.push({ d: `M${fmt(tx)} ${fmt(ty)}Q${fmt(cx)} ${fmt(cy)} ${fmt(ex)} ${fmt(ey)}`, w: 0.9 })
+        }
       }
     })
   }

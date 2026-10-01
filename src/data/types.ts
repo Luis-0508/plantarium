@@ -105,13 +105,15 @@ export interface CalatheaParams {
 
 export interface DracaenaParams {
   type: 'dracaena'
-  /** Height of each cane above the soil (m); one leaf head per cane. */
+  /** Height of each trunk above the soil up to its fork (m). */
   canes: number[]
   caneRadius: number
-  /** Canes that fork below the top into a second, shorter head. */
-  forks: number
+  /** Branches per trunk fork [min, max]; each carries a leaf head. */
+  branches: [number, number]
+  /** Length of a branch from the fork to its tip (m). */
+  branchLength: number
   leavesPerHead: number
-  /** Length of the leafy upper part of a cane (m). */
+  /** Length of the leafy upper part of a branch (m). */
   headLength: number
   leafLength: number
   /** Half-width of the strap leaf (m). */
@@ -171,6 +173,11 @@ export interface Plant {
    * compiled from general care guides, not yet reviewed by a botanist.
    */
   dataQuality: 'placeholder' | 'reviewed'
+  /**
+   * Leaves rise in the evening and lower in the morning (nyctinasty). The
+   * stage then offers a time-of-day switch; the model encodes the motion.
+   */
+  nyctinasty?: boolean
 
   care: {
     /** 0 = deep shade, 1 = direct sun. */

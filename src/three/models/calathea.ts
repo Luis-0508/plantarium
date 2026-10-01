@@ -21,10 +21,11 @@ COLUMNS.push(...COLUMNS.slice(0, -1).map((s) => -s).reverse())
 const VEIN_SLANT = 0.3
 
 /**
- * Calathea (Goeppertia makoyana) clump: a dense, upright bush of oval blades
- * held at every height on thin reddish petioles, each ending in a pulvinus
- * joint. The blade is two layers: a patterned upper side and a wine-red
- * underside. Young leaves emerge rolled like a cigar.
+ * Calathea (Goeppertia makoyana) clump: a dense bush of oval blades held at
+ * every height on thin reddish petioles, each ending in a pulvinus joint that
+ * lowers the blade in the morning and raises it in the evening. The blade is
+ * two layers: a patterned green upper side and a wine-red underside. Young
+ * leaves emerge rolled like a cigar.
  */
 export function generateCalathea(rng: Rng, p: CalatheaParams, soilY: number, potRadius: number) {
   const leaves = new MeshBuilder()
@@ -68,16 +69,17 @@ export function generateCalathea(rng: Rng, p: CalatheaParams, soilY: number, pot
   }
 
   /**
-   * `faceOut`: an upright blade stands like a paddle with its upper side
-   * turned outward, instead of toward the plant centre as the default frame
-   * (upper side = the side facing up) would put it.
+   * Blade from the pulvinus at `origin`. In the evening (`uPose` = 1) the
+   * blade turns about the pulvinus by `rise` radians and stands upright,
+   * showing its wine-red underside; in the morning it lies flat again.
    */
-  const addBlade = (origin: THREE.Vector3, dir: THREE.Vector3, length: number, width: number, droop: number, faceOut: boolean) => {
+  const addBlade = (origin: THREE.Vector3, dir: THREE.Vector3, length: number, width: number, droop: number, rise: number) => {
     const spine = arcSpine(origin, dir, length, droop, 64)
     const twist = rng.range(-0.3, 0.3)
     const tint = rng.range(-0.03, 0.03)
-    const sideHint = faceOut ? new THREE.Vector3().crossVectors(UP, dir).normalize() : undefined
-    const shape = { spine, columns: COLUMNS, keel: 0.1, twist, sideHint, width: bladeWidth(width) }
+    const shape = { spine, columns: COLUMNS, keel: 0.1, twist, width: bladeWidth(width) }
+    const axis = new THREE.Vector3(dir.x, 0, dir.z).cross(UP).normalize()
+    leaves.setMotion({ pivot: origin, axis, angle: rise })
     leaves.addRibbon({
       ...shape,
       color: (t, s) => {
@@ -85,11 +87,12 @@ export function generateCalathea(rng: Rng, p: CalatheaParams, soilY: number, pot
         return ground.clone().offsetHSL(0, 0, tint).lerp(patch, pattern(t, s))
       },
     })
-    leaves.addRibbon({ ...shape, offset: -0.0007, color: (t, s) => under.clone().lerp(underPatch, pattern(t, s) * 0.8) })
+    leaves.addRibbon({ ...shape, offset: -0.0007, glow: 0.3, color: (t, s) => under.clone().lerp(underPatch, pattern(t, s) * 0.7) })
+    leaves.setMotion(null)
   }
 
   // Leaves are stacked at every height: short petioles splay out over the
-  // rim, long ones stand nearly upright and angle their blades upward.
+  // rim, long ones stand nearly upright.
   const clump = potRadius * 0.38
   for (let i = 0; i < p.leafCount; i++) {
     const h = THREE.MathUtils.clamp((i + rng.range(0, 1)) / p.leafCount, 0, 1) // 0 = low, 1 = top of the bush
@@ -97,7 +100,7 @@ export function generateCalathea(rng: Rng, p: CalatheaParams, soilY: number, pot
     const r = clump * Math.sqrt(rng.range(0.05, 1))
     const origin = new THREE.Vector3(Math.cos(az) * r, soilY - 0.005, Math.sin(az) * r)
 
-    const elev = THREE.MathUtils.lerp(0.75, 1.32, h) + rng.range(-0.08, 0.08)
+    const elev = THREE.MathUtils.lerp(0.8, 1.38, h) + rng.range(-0.08, 0.08)
     const dir = new THREE.Vector3(Math.cos(az) * Math.cos(elev), Math.sin(elev), Math.sin(az) * Math.cos(elev))
     const len = THREE.MathUtils.lerp(p.petioleLength[0], p.petioleLength[1], h) * rng.range(0.88, 1.08)
     const stalk = arcSpine(origin, dir, len, 0.06, 16)
@@ -109,17 +112,14 @@ export function generateCalathea(rng: Rng, p: CalatheaParams, soilY: number, pot
       radial: 6,
     })
 
-    // The pulvinus turns the upper side toward the light: the lowest blades
-    // spread flat over the rim, the rest stand upright facing outward and
-    // curl their tips away from the clump, so the bush shows its pattern
-    // from every side and hides the stalks.
+    // Morning: the pulvinus holds the blade about level, upper side to the
+    // light, the upper ones tilted higher. Evening: nearly upright.
     const baz = az + rng.range(-0.35, 0.35)
-    const faceOut = h > 0.22
-    const belev = faceOut ? rng.range(1.12, 1.42) : rng.range(-0.05, 0.25)
+    const belev = THREE.MathUtils.lerp(0.08, 0.45, h) + rng.range(-0.1, 0.1)
+    const evening = rng.range(1.25, 1.5)
     const bdir = new THREE.Vector3(Math.cos(baz) * Math.cos(belev), Math.sin(belev), Math.sin(baz) * Math.cos(belev))
     const size = THREE.MathUtils.lerp(0.85, 1, Math.sin(Math.PI * h)) * rng.range(0.88, 1.08)
-    const droop = faceOut ? rng.range(0.5, 0.85) : 0.3
-    addBlade(stalk[stalk.length - 1], bdir, p.bladeLength * size, p.bladeWidth * size, droop, faceOut)
+    addBlade(stalk[stalk.length - 1], bdir, p.bladeLength * size, p.bladeWidth * size, rng.range(0.25, 0.4), evening - belev)
   }
 
   // Young leaves unfurl from the centre still rolled, showing their red underside.

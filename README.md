@@ -18,7 +18,9 @@ npm run dev
 ## Features
 
 - **Plant view**: orbit, zoom, reset, fullscreen; pot can be shown, made
-  transparent or hidden, soil can be made transparent.
+  transparent or hidden, soil can be made transparent. Plants with sleep
+  movements (`nyctinasty: true`, e.g. the Calathea) get a time-of-day switch:
+  leaves lie flat in the morning and rise in the evening.
 - **Root view**: pot turns into a glass outline, soil into stipple, foliage
   fades and the scene switches to a Prussian-blue cyanotype ground. A depth
   scale, root-depth ring and spread dimension are drawn in 3D.
@@ -52,7 +54,8 @@ src/
       calathea.ts   Petiolate leaf clump with patterned two-sided blades (Goeppertia)
       dracaena.ts   Woody canes with terminal leaf tufts (Dracaena marginata)
       roots.ts      Root growth as constrained random walks inside the pot
-      geometry.ts   Mesh builder for ribbons and tubes
+      geometry.ts   Mesh builder for ribbons and tubes; optional per-vertex leaf
+                    motion (pivot, axis, angle) applied in the foliage shader
   ui/               Panel, controls, comparison, glyphs, small data graphics
 ```
 
