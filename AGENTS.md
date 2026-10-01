@@ -34,7 +34,8 @@ architecture and `CONTRIBUTING.md` for workflows.
 
 ## Finishing work
 
-- Run `npm run lint` and `npm run build`; both must pass.
+- Run `npm run lint`, `npm run build`, `npm test` and `npm run test:browser`;
+  all must pass.
 - Update `README.md` / `CONTRIBUTING.md` when setup, architecture, data schema
   or the GLB contract changes.
 - Do not add AI co-author or attribution lines to commits or PRs.
