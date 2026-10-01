@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 64" role="img" aria-label="Plantarium">
+  <style>.wordmark{fill:#18231e}@media (prefers-color-scheme:dark){.wordmark{fill:#f1eedd}}</style>
+  <!-- Mark: same drawing as plantarium-mark.svg -->
+  <rect width="64" height="64" rx="13" fill="#173a66"/>
+  <g fill="none" stroke="#f1eedd" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M32 35V15" stroke-width="2.6"/>
+    <path d="M32 27C25.5 26.5 20.5 22 19.5 14.5C26 14.5 31 18.5 32 24.5Z" fill="#f1eedd" stroke-width="1.6"/>
+    <path d="M32 22.5C37.5 22 41.5 18.5 42.5 12.5C37 12.5 32.8 15.8 32 20.5Z" fill="#f1eedd" stroke-width="1.6"/>
+    <path d="M13 35.5H51" stroke-width="2.2"/>
+    <g stroke-width="1.7">
+      <path d="M32 36C32.4 41 31.4 46 30.2 52"/>
+      <path d="M31.8 38.5C28 40 24.5 42.5 21.5 47"/>
+      <path d="M32.2 39.5C36 41 39.5 43.5 42.5 48.5"/>
+    </g>
+    <g stroke-width="1.2" opacity="0.8">
+      <path d="M30.8 46C28.6 47.6 27.2 49.6 26.2 52.5"/>
+      <path d="M31.2 45C33.8 46.6 35.4 48.8 36.4 52"/>
+      <path d="M24.6 43.2C22.4 43.6 20.2 44.6 18.2 46.2"/>
+      <path d="M39.6 44.6C42 44.8 44.4 45.6 46.4 47.2"/>
+    </g>
+  </g>
+  <!-- Wordmark: Newsreader (the app's serif) with serif fallbacks -->
+  <text class="wordmark" x="82" y="43" font-family="Newsreader, 'Iowan Old Style', Georgia, 'Times New Roman', serif" font-size="34" font-weight="500" letter-spacing="0.3">Plantarium</text>
+</svg>
