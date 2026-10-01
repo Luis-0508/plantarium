@@ -52,16 +52,7 @@ test('keeps every anatomy region reachable and honors reduced motion', async ({ 
   await expect(page.getByText('Maße gelten für eine Pflanze im empfohlenen Topf.')).toBeVisible()
   await expect(page.locator('.ruler-note').filter({ hasText: 'Wurzeltiefe' })).toBeVisible()
   if (testInfo.project.name === 'desktop') await expect(page.locator('.panel__scroll')).toHaveAttribute('data-scroll-behavior', 'instant')
-  await page.screenshot({ path: testInfo.outputPath('root-context.png') })
-  const depthAnchor = page.locator('.anchor').filter({ hasText: 'Wurzeltiefe' })
-  const initialTransform = await depthAnchor.evaluate((el) => (el as HTMLElement).style.transform)
-  await page.getByRole('button', { name: 'Heranzoomen', exact: true }).click()
-  await expect.poll(() => depthAnchor.evaluate((el) => (el as HTMLElement).style.transform)).not.toBe(initialTransform)
-  await page.keyboard.press('3')
-  await expect(page.getByRole('radio', { name: 'Anatomie', exact: true })).toBeChecked()
-  await page.keyboard.press('2')
-  // A view change resets framing; the previous zoom command must not replay.
-  await expect.poll(() => depthAnchor.evaluate((el) => (el as HTMLElement).style.transform)).toBe(initialTransform)
+  if (!process.env.CI) await page.screenshot({ path: testInfo.outputPath('root-context.png') })
   await page.keyboard.press('3')
   const selector = page.getByRole('combobox', { name: 'Pflanzenteil wählen' })
   const titles = ['Fiederwedel', 'Stämmchen', 'Blattscheiden', 'Substrat', 'Faserwurzeln']
@@ -84,7 +75,7 @@ test('keeps every anatomy region reachable and honors reduced motion', async ({ 
   }
   await expect(page.locator('.anatomy__card')).toBeVisible()
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
-  await page.screenshot({ path: testInfo.outputPath('anatomy-access.png'), animations: 'disabled' })
+  if (!process.env.CI) await page.screenshot({ path: testInfo.outputPath('anatomy-access.png'), animations: 'disabled' })
   await page.getByRole('button', { name: 'Erklärung schließen' }).click()
   await expect(page.locator('.anatomy__card')).toHaveCount(0)
   if (testInfo.project.name !== 'desktop') await expect(selector).toBeFocused()
@@ -131,4 +122,19 @@ test('commits visible plant information together during animated and rapid chang
   await expect(page.locator('.stage')).toHaveAttribute('data-plant-id', 'bergpalme')
   await expect(page.locator('.stage')).toHaveAttribute('aria-busy', 'false')
   await expect(page.locator('.anatomy__card')).toHaveCount(0)
+})
+
+test('does not replay a zoom command when the view changes', async ({ page }) => {
+  await page.goto('/#pflanze/bergpalme')
+  await page.keyboard.press('2')
+  await expect(page.locator('.ruler-note').filter({ hasText: 'Wurzeltiefe' })).toBeVisible()
+  const depthAnchor = page.locator('.anchor').filter({ hasText: 'Wurzeltiefe' })
+  const initialTransform = await depthAnchor.evaluate((el) => (el as HTMLElement).style.transform)
+  await page.getByRole('button', { name: 'Heranzoomen', exact: true }).click()
+  await expect.poll(() => depthAnchor.evaluate((el) => (el as HTMLElement).style.transform)).not.toBe(initialTransform)
+  await page.keyboard.press('3')
+  await expect(page.getByRole('radio', { name: 'Anatomie', exact: true })).toBeChecked()
+  await page.keyboard.press('2')
+  // A view change resets framing; the previous zoom command must not replay.
+  await expect.poll(() => depthAnchor.evaluate((el) => (el as HTMLElement).style.transform)).toBe(initialTransform)
 })
