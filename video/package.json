@@ -1,0 +1,25 @@
+{
+  "name": "plantarium-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "capture": "node scripts/capture.mjs",
+    "studio": "remotion studio",
+    "render": "remotion render Showcase ../output/plantarium-showcase.mp4",
+    "still": "remotion still Showcase"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.532",
+    "@remotion/google-fonts": "^4.0.532",
+    "@remotion/paths": "^4.0.532",
+    "@remotion/transitions": "^4.0.532",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "remotion": "^4.0.532"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "playwright-core": "^1.63.0",
+    "typescript": "^7.0.2"
+  }
+}

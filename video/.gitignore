@@ -1,0 +1,4 @@
+node_modules
+# Regenerate with `npm run capture` (needs the app running on :5173)
+public/captures
+out
