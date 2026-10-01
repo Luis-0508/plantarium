@@ -14,12 +14,17 @@ npm install        # install dependencies
 npm run dev        # start the dev server at http://localhost:5173
 npm run lint       # oxlint
 npm run build      # type-check (tsc -b) and production build into dist/
+npm test           # deterministic data and geometry tests (Vitest)
+npx playwright install chromium # install the browser once
+npm run test:browser # Chromium checks at desktop, tablet and mobile sizes
 npm run preview    # serve the production build locally
 ```
 
-CI runs `npm ci`, `npm run lint` and `npm run build` on every push to `main`
-and every pull request. There is no automated test suite yet; describe your
-manual checks in the pull request.
+CI runs `npm ci`, lint, the type-checked build, unit tests and browser tests on
+every push to `main` and every pull request, including dependent PR branches.
+Use `npm run test:watch` while developing. Browser tests use a dedicated Vite
+server on port 4173 and Chromium software rendering; no external fonts are
+required. Test artifacts are written to ignored `test-results/`.
 
 ## Language
 
@@ -99,3 +104,32 @@ note for these entries.
 - Only set `dataQuality: 'reviewed'` together with the sources used, listed in
   the pull request.
 - Do not describe placeholder values as verified in the UI or documentation.
+
+### Source references
+
+Add consulted sources to `src/data/sources.ts` with a stable `id`, `title`,
+`author` (person or organization), `url`, `accessedOn` (YYYY-MM-DD) and optional
+`notes`. Reference their IDs from a plant's optional `sourceRefs`, grouped by
+`care`, `dimensions`, `roots` and `anatomy`. One source can support several
+sections or plants. Do not invent sources or treat a citation as verification.
+Unreferenced sections remain unverified; keep the whole entry `placeholder`
+until all sections have been checked. Dataset tests enforce valid references
+and require references for every section of an entry marked `reviewed`.
+
+Treat plant records as immutable inputs. To change model parameters, replace
+the plant object (including changed nested values). Geometry and bounds use
+weak caches keyed by object identity, so a replacement with the same ID gets
+fresh geometry. The single mounted procedural specimen releases its GPU
+buffers on unmount; cached CPU arrays can be uploaded again on later visits.
+
+Generator tests check complete root surfaces, including tuber swellings,
+against the pot wall, soil surface, declared depth and spread. Do not loosen
+these limits to conceal a geometry regression.
+
+### Performance checks
+
+Before changing DPR, shadows or model detail, profile all three plants in the
+three modes on a real mobile device and desktop. Record frame time and GPU
+memory during orbiting, plant switches and repeated explorer/comparison visits.
+The continuous loop is currently needed for foliage and transitions; no device
+quality heuristics are applied without measurements.
