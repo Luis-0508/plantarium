@@ -125,15 +125,23 @@ export function generateDracaena(rng: Rng, p: DracaenaParams, soilY: number, pot
     addCane(pts, radius, 0.35)
 
     // The trunk forks into two or three short branches, each with its own
-    // leaf head; they splay apart in a V and turn upright again.
+    // leaf head: a short elbow out of the knob, then nearly straight up, so
+    // the branches stand almost parallel like a candelabra.
     const knob = pts[segs].clone().setY(pts[segs].y - radius * 0.8)
     const n = rng.int(p.branches[0], p.branches[1])
     const turn = rng.range(0, Math.PI * 2)
     for (let b = 0; b < n; b++) {
       const baz = turn + (b / n) * Math.PI * 2 + rng.range(-0.35, 0.35)
-      const tilt = rng.range(0.35, 0.6)
-      const bdir = new THREE.Vector3(Math.cos(baz) * Math.sin(tilt), Math.cos(tilt), Math.sin(baz) * Math.sin(tilt))
-      const branch = arcSpine(knob, bdir, p.branchLength * rng.range(0.75, 1.2), -0.35, 14)
+      const out = new THREE.Vector3(Math.cos(baz), 0, Math.sin(baz))
+      const length = p.branchLength * rng.range(0.75, 1.2)
+      const elbow = radius * rng.range(1.6, 2.2)
+      const tilt = rng.range(0.04, 0.16) // remaining lean from vertical
+      const branch = new THREE.CatmullRomCurve3([
+        knob.clone(),
+        knob.clone().addScaledVector(out, elbow * 0.75).setY(knob.y + elbow * 0.35),
+        knob.clone().addScaledVector(out, elbow).setY(knob.y + elbow * 1.2),
+        knob.clone().addScaledVector(out, elbow + length * Math.sin(tilt)).setY(knob.y + length),
+      ]).getPoints(16)
       const bradius = radius * rng.range(0.55, 0.68)
       addCane(branch, bradius, 0)
       addHead(branch, bradius * 0.8, rng.range(0.85, 1))

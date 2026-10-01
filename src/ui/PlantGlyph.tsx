@@ -112,9 +112,9 @@ function glyphPaths(plant: Plant) {
       for (let b = 0; b < n; b++) {
         const spread = n > 1 ? (b / (n - 1)) * 2 - 1 : 0
         const L = p.branchLength * heightScale
-        const tx = bx + spread * L * 0.5
+        const tx = bx + spread * L * 0.18
         const ty = ky - L
-        paths.push({ d: `M${fmt(bx)} ${fmt(ky)}Q${fmt(tx)} ${fmt(ky - L * 0.3)} ${fmt(tx)} ${fmt(ty)}`, w: 1.2 })
+        paths.push({ d: `M${fmt(bx)} ${fmt(ky)}Q${fmt(tx)} ${fmt(ky - L * 0.04)} ${fmt(tx)} ${fmt(ty)}`, w: 1.2 })
         const leaves = 9
         for (let i = 0; i < leaves; i++) {
           const a = ((i / (leaves - 1)) * 2 - 1) * 1.2 + spread * 0.25 + rng.range(-0.08, 0.08)
