@@ -91,6 +91,15 @@ screens and stack below 900 px, on portrait tablets and phones.
 camera, `+`/`-` zoom and `Esc` closes the anatomy card. The view switch is an
 ARIA radio group with arrow-key navigation, controls are labelled, focus is
 visible, and animations respect `prefers-reduced-motion`.
+On narrow screens a native anatomy selector keeps every region reachable
+without a projected hotspot. Closing the card restores focus to its selector.
+
+**Navigation and recovery.** Hash links (`#pflanze/<id>` and
+`#vergleich/<id>`) preserve the selected plant, including after reload or
+browser back/forward. Legacy links without an ID use the first plant. During
+a plant change the model, pot and information switch together at the end of
+the shrink animation. If the 3D viewer fails, the information remains available;
+the retry button reloads the current URL, also recovering failed Stage chunks.
 
 **GLB path.** Plants can reference a modelled GLB asset instead of a generator,
 with a procedural fallback while loading or on failure. This path is prepared
@@ -217,9 +226,10 @@ the same species.
 
 ## GLB models
 
-**Status: prepared, not yet tested with a real asset.** The loading code, the
-error boundary and the procedural fallback exist, but no GLB file has been
-run through them yet.
+**Status: synthetic GLTF loading and failure recovery are browser-tested.**
+No real horticultural GLB asset has been reviewed yet. Changing either model
+URL resets the error boundary; the procedural fallback is used during loading
+and after an error.
 
 - Files: `public/models/<plant-id>.glb` for the shoot and optionally
   `public/models/<plant-id>-roots.glb` for the roots.

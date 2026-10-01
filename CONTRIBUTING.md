@@ -79,7 +79,8 @@ When changing an existing generator, check every plant that uses it.
 
 ## GLB assets
 
-The GLB path is prepared but has not yet been tested with a real asset, so
+The GLB path has a small synthetic GLTF regression fixture for loading and
+failure recovery. It has not yet been tested with a real horticultural asset;
 treat it as experimental and include screenshots when you exercise it.
 
 - Files: `public/models/<plant-id>.glb` for the shoot and optionally

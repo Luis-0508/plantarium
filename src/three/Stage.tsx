@@ -96,6 +96,7 @@ function CameraRig({ plant, mode, command, reducedMotion }: RigProps) {
   )
 
   const framed = useRef(false)
+  const handledCommand = useRef<CameraCommand | null>(null)
   useEffect(() => {
     frame(framed.current)
     framed.current = true
@@ -103,12 +104,13 @@ function CameraRig({ plant, mode, command, reducedMotion }: RigProps) {
 
   useEffect(() => {
     const c = controls.current
-    if (!command || !c) return
+    if (!command || !c || handledCommand.current === command) return
+    handledCommand.current = command
     if (command.type === 'reset') frame(true)
     else c.dolly(c.distance * (command.type === 'zoom-in' ? 0.25 : -0.3), !reducedMotion)
   }, [command, frame, reducedMotion])
 
-  return <CameraControls ref={controls} makeDefault smoothTime={0.55} draggingSmoothTime={0.12} dollySpeed={0.6} maxPolarAngle={Math.PI * 0.62} />
+  return <CameraControls ref={controls} makeDefault smoothTime={reducedMotion ? 0 : 0.55} draggingSmoothTime={reducedMotion ? 0 : 0.12} dollySpeed={0.6} maxPolarAngle={Math.PI * 0.62} />
 }
 
 export interface StageProps extends SpecimenProps {

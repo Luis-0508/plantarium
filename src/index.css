@@ -230,6 +230,25 @@ p {
   touch-action: none;
 }
 
+.stage__error {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(360px, calc(100% - 48px));
+  padding: 20px;
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: center;
+}
+
+.stage__error button {
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 8px 16px;
+}
+
 .stage__title {
   position: absolute;
   z-index: 5;
@@ -510,6 +529,8 @@ p {
 }
 
 /* ---------- Anatomy ---------- */
+.anatomy__mobile { display: none; }
+
 .anatomy__regions {
   display: flex;
   flex-wrap: wrap;
@@ -1624,6 +1645,21 @@ p {
     display: none;
   }
 
+  .anatomy__mobile { display: block; margin-bottom: 8px; }
+
+  .anatomy__close { min-width: 44px; min-height: 44px; }
+
+  .anatomy__mobile select {
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--paper);
+    color: var(--ink);
+    font: inherit;
+  }
+
   /* An open explanation sits over the title, clear of pot and roots. */
   .stage__anatomy:has(.anatomy__card) {
     top: 48px;
@@ -1632,8 +1668,17 @@ p {
     z-index: 31;
   }
 
+  .stage--anatomy:has(.anatomy__card) .stage__title {
+    opacity: 0;
+    animation: none;
+  }
+
   .stage__caption {
-    display: none;
+    display: block;
+    max-width: 26ch;
+    margin-top: 10px;
+    font-size: 11px;
+    line-height: 1.35;
   }
 
   .stage__footer {
