@@ -148,13 +148,20 @@ function Lineup({ plants, onOpen }: { plants: Plant[]; onOpen: (id: string) => v
 }
 
 export function Comparison({ plants, onOpen }: { plants: Plant[]; onOpen: (id: string) => void }) {
-  const { t: { compare: t, viz }, l } = useI18n()
+  const { t: { compare: t, viz, panel }, l } = useI18n()
   const traits = traitsFor(plants, t, l, viz.growthLevels)
+  const unverified = plants.filter((plant) => plant.dataQuality === 'placeholder')
   return (
     <main className="compare">
       <header className="compare__head">
         <h1>{t.title}</h1>
         <p>{t.intro}</p>
+        {unverified.length > 0 && (
+          <p className="compare__quality">
+            {unverified.length < plants.length && `${t.unverifiedPlants(unverified.map((plant) => l(plant.commonName)).join(', '))} `}
+            {panel.placeholder}
+          </p>
+        )}
         <ul className="legend">
           {plants.map((p) => (
             <li key={p.id}>

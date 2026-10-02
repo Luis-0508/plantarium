@@ -1554,6 +1554,12 @@ p {
   margin-bottom: 20px;
 }
 
+.compare__head .compare__quality {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
 .lineup-scroll {
   overflow-x: auto;
   padding: 4px;
