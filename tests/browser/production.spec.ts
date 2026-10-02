@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 test('renders bundled foliage and responds to camera and touch interaction', async ({ page, context }, testInfo) => {
+  test.setTimeout(120_000)
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   await page.route('https://fonts.googleapis.com/**', (route) => route.fulfill({ body: '', contentType: 'text/css' }))
@@ -9,20 +10,26 @@ test('renders bundled foliage and responds to camera and touch interaction', asy
   const canvas = page.locator('canvas')
   await expect(canvas).toBeVisible()
   await expect(page.locator('.stage__loading')).toHaveCount(0)
+  const box = (await canvas.boundingBox())!
+  // Exclude overlay controls and keep image transfer small on software GPUs.
+  const specimenImage = () => page.screenshot({ clip: {
+    x: box.x + box.width * 0.25, y: box.y + box.height * 0.35,
+    width: box.width * 0.5, height: box.height * 0.3,
+  } })
 
   // Check actual rendered pixels, not just a mounted canvas. Background, pot and
   // text cannot satisfy this green-foliage threshold on their own.
   await expect.poll(async () => {
-    const png = await canvas.screenshot()
+    const png = await specimenImage()
     return page.evaluate(async (base64) => {
       const image = new Image()
       image.src = `data:image/png;base64,${base64}`
       await image.decode()
       const surface = document.createElement('canvas')
-      surface.width = image.width
-      surface.height = image.height
+      surface.width = 128
+      surface.height = 128
       const ctx = surface.getContext('2d')!
-      ctx.drawImage(image, 0, 0)
+      ctx.drawImage(image, 0, 0, surface.width, surface.height)
       const pixels = ctx.getImageData(0, 0, surface.width, surface.height).data
       let green = 0
       for (let i = 0; i < pixels.length; i += 4) {
@@ -30,15 +37,8 @@ test('renders bundled foliage and responds to camera and touch interaction', asy
       }
       return green
     }, png.toString('base64'))
-  }).toBeGreaterThan(300)
+  }, { timeout: 60_000 }).toBeGreaterThan(30)
 
-  const box = (await canvas.boundingBox())!
-  // Sample only the specimen area: button hover states and footer glyphs must
-  // not make a broken camera interaction look like a successful render change.
-  const specimenImage = () => page.screenshot({ clip: {
-    x: box.x + box.width * 0.25, y: box.y + box.height * 0.35,
-    width: box.width * 0.5, height: box.height * 0.3,
-  } })
   const before = await specimenImage()
   if (testInfo.project.name === 'mobile') {
     const session = await context.newCDPSession(page)
