@@ -284,12 +284,15 @@ npm run lint     # oxlint
 npm run build    # type-check and production build into dist/
 npm test         # data and procedural geometry invariants
 npx playwright install chromium # once, before browser tests
-npm run test:browser # desktop, tablet and mobile smoke checks
+npm run test:browser # development checks plus bundled production smoke checks
 ```
 
 `npm run preview` serves the production build. CI runs lint, build, unit tests
 and Chromium browser tests on every push to `main` and every pull request.
 `npm run test:watch` runs the unit suite during development.
+
+`npm run test:browser:production` builds and checks the production app separately
+on desktop and mobile, including visible foliage and simulated touch orbiting.
 
 A Remotion showcase video, captured from the running app, lives in
 [`video/`](video/README.md) as a separate npm project.
