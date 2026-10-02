@@ -148,7 +148,7 @@ p {
   color: var(--ink);
 }
 
-.pages button[aria-current='true'] {
+.pages button[aria-current='page'] {
   color: var(--ink);
   border-bottom-color: currentColor;
 }
@@ -158,7 +158,7 @@ p {
   color: var(--root-white);
 }
 
-.app--explore:has(.stage--roots) .pages button:not([aria-current='true']) {
+.app--explore:has(.stage--roots) .pages button:not([aria-current='page']) {
   color: rgb(241 238 221 / 0.65);
 }
 
@@ -1902,6 +1902,20 @@ p {
   .facts dd {
     font-size: 14px;
   }
+}
+
+@media (max-width: 420px) {
+  .masthead {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+  }
+
+  .locales { grid-column: 2; grid-row: 1; }
+  .pages { grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; gap: 16px; }
+  .stage__title { top: 88px; }
+  .stage__tools { top: 88px; }
+  .stage__anatomy:has(.anatomy__card) { top: 88px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
