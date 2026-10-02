@@ -10,12 +10,15 @@ test('renders bundled foliage and responds to camera and touch interaction', asy
   const canvas = page.locator('canvas')
   await expect(canvas).toBeVisible()
   await expect(page.locator('.stage__loading')).toHaveCount(0)
-  const box = (await canvas.boundingBox())!
   // Exclude overlay controls and keep image transfer small on software GPUs.
-  const specimenImage = () => page.screenshot({ clip: {
-    x: box.x + box.width * 0.25, y: box.y + box.height * 0.35,
-    width: box.width * 0.5, height: box.height * 0.3,
-  } })
+  const specimenImage = async () => {
+    // R3F resizes the initial 300 x 150 canvas after it becomes visible.
+    const box = (await canvas.boundingBox())!
+    return page.screenshot({ clip: {
+      x: box.x + box.width * 0.25, y: box.y + box.height * 0.35,
+      width: box.width * 0.5, height: box.height * 0.3,
+    } })
+  }
 
   // Check actual rendered pixels, not just a mounted canvas. Background, pot and
   // text cannot satisfy this green-foliage threshold on their own.
@@ -41,6 +44,7 @@ test('renders bundled foliage and responds to camera and touch interaction', asy
 
   const before = await specimenImage()
   if (testInfo.project.name === 'mobile') {
+    const box = (await canvas.boundingBox())!
     const session = await context.newCDPSession(page)
     const y = box.y + box.height * 0.55
     await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x + box.width * 0.3, y }] })
