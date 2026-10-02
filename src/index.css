@@ -1933,6 +1933,7 @@ p {
   .pages { grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; gap: 16px; }
   .stage__title { top: 88px; }
   .stage__tools { top: 88px; }
+  .stage__vessel { top: 276px; }
   .stage__anatomy:has(.anatomy__card) { top: 88px; }
 }
 

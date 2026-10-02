@@ -27,3 +27,22 @@ test('keeps both languages reachable and marks the active page with fallback fon
   await expect(page.locator('.pages button[aria-current="page"]')).toHaveCSS('color', 'rgb(241, 238, 221)')
   await expect(page.locator('.pages button:not([aria-current])')).not.toHaveCSS('color', 'rgb(241, 238, 221)')
 })
+
+test('keeps camera, day and vessel controls separate below a two-row header', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'The two-row header applies only to narrow screens')
+  await page.setViewportSize({ width: 320, height: 568 })
+  await page.route('https://fonts.googleapis.com/**', (route) => route.fulfill({ body: '', contentType: 'text/css' }))
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/#pflanze/pfauen-korbmarante')
+  for (const language of ['English', 'Deutsch']) {
+    await page.locator('.locales').getByRole('button', { name: language, exact: true }).click()
+    await expect(page.locator('.vessel--day button')).toBeVisible()
+    const tools = (await page.locator('.stage__tools').boundingBox())!
+    const vessel = (await page.locator('.stage__vessel').boundingBox())!
+    const modes = (await page.locator('.stage__modes').boundingBox())!
+    expect(tools.y + tools.height).toBeLessThanOrEqual(vessel.y)
+    expect(vessel.y + vessel.height).toBeLessThanOrEqual(modes.y)
+    await page.locator('.vessel--day button').click()
+    await page.locator('.vessel button').last().click()
+  }
+})
