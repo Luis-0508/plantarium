@@ -23,8 +23,15 @@ npm run preview    # serve the production build locally
 CI runs `npm ci`, lint, the type-checked build, unit tests and browser tests on
 every push to `main` and every pull request, including dependent PR branches.
 Use `npm run test:watch` while developing. Browser tests use a dedicated Vite
-server on port 4173 and Chromium software rendering; no external fonts are
+server on port 4173 and a production preview on port 4174, with Chromium software rendering; no external fonts are
 required. Test artifacts are written to ignored `test-results/`.
+
+`npm run test:browser` runs both suites; `npm run test:browser:production`
+builds and runs only the bundled-app checks. Production diagnostics live in
+`test-results/production/` so they do not replace development-suite artifacts.
+Rendering checks count visible foliage pixels and compare camera interactions
+within the same run. Cross-platform screenshot baselines are intentionally
+avoided because system font fallbacks and software GPU output differ.
 
 ## Language
 
