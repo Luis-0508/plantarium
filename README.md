@@ -10,7 +10,7 @@
 [![React 19](https://img.shields.io/badge/React-19-23272f?logo=react&logoColor=61dafb)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![three.js](https://img.shields.io/badge/three.js-React_Three_Fiber-1d4677?logo=threedotjs&logoColor=white)](https://r3f.docs.pmnd.rs/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-4d6b2f)](LICENSE)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-4d6b2f)](LICENSE)
 
 <img src="docs/screenshots/plant-view-areca-palm.webp" alt="Plantarium showing a procedurally generated Areca palm in its pot, with the specimen sheet on the right" width="900">
 
@@ -320,4 +320,4 @@ workflow, adding plants and growth forms, and data-quality rules.
 
 ## License
 
-[MIT](LICENSE)
+[GNU Affero General Public License v3.0](LICENSE)
