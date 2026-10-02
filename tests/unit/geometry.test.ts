@@ -89,6 +89,23 @@ describe('procedural geometry', () => {
       profile: plants[0].roots, origins: [] })).toThrow(/origin/i)
   })
 
+  it('supports a sparse calathea with one feather patch per side', () => {
+    const plant = plants.find((plant) => plant.model.kind === 'procedural' && plant.model.params.type === 'calathea')!
+    if (plant.model.kind !== 'procedural' || plant.model.params.type !== 'calathea') throw new Error('Expected calathea')
+    const shoot = generateCalathea(createRng(1), { ...plant.model.params, leafCount: 2, patches: 1 }, soilLevel(plant.pot.height), plant.pot.radius)
+    try {
+      for (const geometry of [shoot.leaves, shoot.stems, shoot.crown]) {
+        expect(geometry.index!.count).toBeGreaterThan(0)
+        for (const attribute of Object.values(geometry.attributes)) {
+          expect(Array.from(attribute.array).every(Number.isFinite)).toBe(true)
+        }
+      }
+      expect(shoot.rootOrigins.length).toBeGreaterThan(0)
+    } finally {
+      for (const geometry of [shoot.leaves, shoot.stems, shoot.crown]) geometry.dispose()
+    }
+  })
+
   it('does not reuse stale geometry or bounds when a plant object is replaced', () => {
     const original = plants[0]
     if (original.model.kind !== 'procedural' || original.model.params.type !== 'rosette') throw new Error('Expected rosette')

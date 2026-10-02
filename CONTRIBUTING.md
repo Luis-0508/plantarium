@@ -26,6 +26,17 @@ Use `npm run test:watch` while developing. Browser tests use a dedicated Vite
 server on port 4173 and Chromium software rendering; no external fonts are
 required. Test artifacts are written to ignored `test-results/`.
 
+## Geometry measurements
+
+Run `npm run benchmark:geometry` (or append `-- --json`) to measure every
+procedural plant. The script bypasses the geometry cache, warms each generator
+twice, and reports the median of five builds plus triangle count and attribute/
+index buffer size. Module loading, garbage collection and disposal are outside
+the measured build interval. Compare runs on the same machine and Node version;
+CPU build times are not GPU frame-rate measurements. No timing threshold runs
+in CI. Inspect the affected plant in morning/evening poses and on narrow screens
+before changing generator resolution.
+
 ## Language
 
 Code, comments, documentation and Git metadata are written in English. The

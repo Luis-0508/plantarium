@@ -74,7 +74,9 @@ export function generateCalathea(rng: Rng, p: CalatheaParams, soilY: number, pot
    * showing its wine-red underside; in the morning it lies flat again.
    */
   const addBlade = (origin: THREE.Vector3, dir: THREE.Vector3, length: number, width: number, droop: number, rise: number) => {
-    const spine = arcSpine(origin, dir, length, droop, 64)
+    // Retain the dense cross-section for feather patches; 48 length segments
+    // resolve the smooth blade curve without oversampling it.
+    const spine = arcSpine(origin, dir, length, droop, 48)
     const twist = rng.range(-0.3, 0.3)
     const tint = rng.range(-0.03, 0.03)
     const shape = { spine, columns: COLUMNS, keel: 0.1, twist, width: bladeWidth(width) }
