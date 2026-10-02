@@ -1330,6 +1330,18 @@ p {
   background: var(--ink-3);
 }
 
+.ph__ends {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+}
+
+.ph { margin-bottom: 14px; }
+
 /* Growth */
 .growth {
   display: flex;

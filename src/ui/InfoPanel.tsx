@@ -9,6 +9,7 @@ import { HumidityGauge } from './viz/HumidityGauge'
 import { RootDiagram } from './viz/RootDiagram'
 import { PipMeter, RangeAxis, SpanScale, StepMeter } from './viz/Scales'
 import { SoilMix } from './viz/SoilMix'
+import { temperatureAxis } from './viz/chart-layout'
 
 const range = (min: number, max: number, unit = '') => (min === max ? `${min}${unit}` : `${min}–${max}${unit}`)
 
@@ -32,6 +33,7 @@ export function InfoPanel({ plant, mode, reducedMotion = false }: { plant: Plant
   const scroller = useRef<HTMLDivElement>(null)
   const { t, l } = useI18n()
   const p = t.panel
+  const temperature = temperatureAxis(care.temperature)
 
   // Only scroll the panel's own column (desktop). On narrow layouts the page
   // itself scrolls, and moving it would take the 3D stage out of view.
@@ -87,8 +89,8 @@ export function InfoPanel({ plant, mode, reducedMotion = false }: { plant: Plant
             <RangeAxis
               ideal={care.temperature.ideal}
               tolerated={{ min: care.temperature.minimum, max: care.temperature.maximum }}
-              domain={[5, 35]}
-              step={5}
+              domain={temperature.domain}
+              step={temperature.step}
               unit=" °C"
               label={p.temperatureLabel(care.temperature.ideal.min, care.temperature.ideal.max, care.temperature.minimum)}
               markers={[{ at: care.temperature.minimum, text: p.minimum(care.temperature.minimum) }]}

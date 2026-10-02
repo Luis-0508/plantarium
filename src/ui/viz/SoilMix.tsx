@@ -1,11 +1,13 @@
 import type { NumericRange, SoilComponent } from '../../data/types'
 import { useI18n } from '../../i18n/context'
+import { phDomain } from './chart-layout'
 
 const TONES = ['var(--soil-1)', 'var(--soil-2)', 'var(--soil-3)', 'var(--soil-4)']
 
 /** Proportional bar of substrate components plus a small pH scale. */
 export function SoilMix({ mix, ph }: { mix: SoilComponent[]; ph: NumericRange }) {
-  const px = (v: number) => ((v - 4) / 5) * 100
+  const [min, max] = phDomain(ph)
+  const px = (v: number) => ((v - min) / (max - min)) * 100
   const { t, l, num } = useI18n()
   return (
     <div className="soil">
@@ -27,6 +29,7 @@ export function SoilMix({ mix, ph }: { mix: SoilComponent[]; ph: NumericRange })
         <div className="ph__track">
           <span className="ph__range" style={{ left: `${px(ph.min)}%`, width: `${px(ph.max) - px(ph.min)}%` }} />
           <span className="ph__neutral" style={{ left: `${px(7)}%` }} />
+          <span className="ph__ends" aria-hidden><span>{min}</span><span>{max}</span></span>
         </div>
         <span className="ph__value num">
           {num(ph.min)}–{num(ph.max)}

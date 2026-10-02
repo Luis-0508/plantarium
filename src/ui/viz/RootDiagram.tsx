@@ -1,25 +1,21 @@
 import type { RootProfile } from '../../data/types'
 import { useI18n } from '../../i18n/context'
+import { rootDiagramLayout } from './chart-layout'
 
 /**
  * Cross-section to scale: recommended pot depth, rooting depth and lateral
- * spread. One unit = 1 cm × 3.
+ * spread. Large profiles use a smaller uniform scale to keep guides in view.
  */
 export function RootDiagram({ roots }: { roots: RootProfile }) {
-  const S = 3
+  const { scale: S, topHalf, bottom, depthY, height } = rootDiagramLayout(roots)
   const { viz } = useI18n().t
-  const potDepth = roots.recommendedPotDepthCm.max
   const potTop = 18
   const cx = 100
-  const topHalf = Math.max(roots.spreadCm + 4, potDepth * 0.55)
   const bottomHalf = topHalf * 0.8
-  const bottom = potTop + potDepth * S
   const soil = potTop + 4
-  const depthY = soil + roots.depthCm * S
   const minY = potTop + roots.recommendedPotDepthCm.min * S
   const pot = `M${cx - topHalf * S} ${potTop}L${cx - bottomHalf * S} ${bottom}H${cx + bottomHalf * S}L${cx + topHalf * S} ${potTop}`
   const width = 200
-  const height = bottom + 26
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="root-diagram" role="img" aria-label={viz.rootLabel(roots.depthCm, roots.spreadCm, roots.recommendedPotDepthCm.min, roots.recommendedPotDepthCm.max)}>
