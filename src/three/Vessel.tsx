@@ -80,10 +80,15 @@ export function Vessel({ radius, height, color, anim }: Props) {
   const ghostMaterial = useMemo(() => createGhostMaterial(), [])
   useEffect(
     () => () => {
+      // Geometry props are owned here, outside R3F's declarative disposal.
+      // The solid and ghost meshes share one pot geometry: dispose it once.
+      potGeometry.dispose()
+      soil.dispose()
+      stippleGeometry.dispose()
       Object.values(textures).forEach((t) => t.dispose())
       ghostMaterial.dispose()
     },
-    [textures, ghostMaterial],
+    [potGeometry, soil, stippleGeometry, textures, ghostMaterial],
   )
 
   useFrame(() => {

@@ -33,6 +33,17 @@ Rendering checks count visible foliage pixels and compare camera interactions
 within the same run. Cross-platform screenshot baselines are intentionally
 avoided because system font fallbacks and software GPU output differ.
 
+## Geometry measurements
+
+Run `npm run benchmark:geometry` (or append `-- --json`) to measure every
+procedural plant. The script bypasses the geometry cache, warms each generator
+twice, and reports the median of five builds plus triangle count and attribute/
+index buffer size. Module loading, garbage collection and disposal are outside
+the measured build interval. Compare runs on the same machine and Node version;
+CPU build times are not GPU frame-rate measurements. No timing threshold runs
+in CI. Inspect the affected plant in morning/evening poses and on narrow screens
+before changing generator resolution.
+
 ## Language
 
 Code, comments, documentation and Git metadata are written in English. The
