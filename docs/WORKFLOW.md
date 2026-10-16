@@ -24,10 +24,10 @@ on Claude Code or the plugin.
 
 The project memory, the Kanban board and the session hook are already
 initialized here; the `init-project` skill only matters again if the board or
-`docs/PROJECT_STATE.md` goes missing. The workflow follows the shared
-[project template](https://github.com/Luis-0508/project-template); when the
-template's workflow files change, port the change deliberately rather than
-copying over project-specific content.
+`docs/PROJECT_STATE.md` goes missing. The workflow follows the maintainer's
+shared project template (a private repository); when the template's workflow
+files change, port the change deliberately rather than copying over
+project-specific content.
 
 Plantarium specifics: GitHub Project #7 tracks maintenance and external
 contributions only (decision 0004). Development work goes through board

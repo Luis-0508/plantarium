@@ -10,8 +10,8 @@ Decision 0004 introduced the local board and said to resolve conflicts in
 whatever branch is checked out in the main working tree, so parallel branches
 regularly carry different versions of the file, and keeping one whole side
 silently drops the other side's tickets and notes. The maintainer's other
-projects adopt the same Claude Code workflow from the shared
-[project template](https://github.com/Luis-0508/project-template), which
+projects adopt the same Claude Code workflow from a shared (private) project
+template, which
 solves this with a merge driver and maintains the session hook and its tests
 in one place.
 
