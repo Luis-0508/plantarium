@@ -1,58 +1,109 @@
 @AGENTS.md
 
-# Claude Code: project board workflow
+# Claude Code workflow for Plantarium
 
-Development progress is tracked on the GitHub Project
-**Plantarium** (https://github.com/users/Luis-0508/projects/7), a board
-grouped by `Status`. Keep it accurate as a side effect of normal work, without
-the user moving cards.
+`AGENTS.md` (imported above) holds the project rules and wins over anything
+here. This file adds how Claude Code sessions keep continuity: what has been
+built, what is in progress, what comes next and why.
 
-## IDs (use directly, no lookups needed)
+## Sources of truth
 
-- Project: number `7`, owner `Luis-0508`, id `PVT_kwHOAp5RJ84BnT_A`
-- Status field: `PVTSSF_lAHOAp5RJ84BnT_Azhl5L_I`
-- Status options: Backlog `d753709e`, Todo `f75ad846`, In Progress
-  `47fc9ee4`, In Review `2b71bcf3`, Blocked `2c751a0f`, Done `98236657`
+| What | Where | Authority |
+|---|---|---|
+| Code, history, branches | git | Highest. Always wins. |
+| Development tasks and their state | `.kanban/board.json` (claude-kanban) | Live task state |
+| Narrative state, blockers, priorities | `docs/PROJECT_STATE.md` | Snapshot; may be stale |
+| Code structure and data flow | `docs/ARCHITECTURE.md` | Explanation |
+| Why things are the way they are | `docs/DECISIONS/` | Decision records |
+| Dependabot, outside issues and PRs | GitHub Project #7 | Maintenance only |
 
-Set a status (item id comes from `item-add` or `item-list`):
+Notes are never authoritative over the repository. When they disagree, verify
+against git and GitHub, act on the facts, and correct the note.
 
-```bash
-gh project item-edit --project-id PVT_kwHOAp5RJ84BnT_A --id <ITEM_ID> --field-id PVTSSF_lAHOAp5RJ84BnT_Azhl5L_I --single-select-option-id <OPTION_ID>
-```
+## Session start
 
-## What GitHub does automatically (do not duplicate)
+A `SessionStart` hook (`scripts/session-context.mjs`) prints branch, sync
+state, uncommitted files, recent commits, a staleness hint for
+`PROJECT_STATE.md` and the board's Doing / Review / top To do tickets. Then:
 
-- Item added to project → `Todo`
-- Issue or PR closed / PR merged → `Done`
-- Item moved to `Done` → linked issue is closed
-- Sub-issues of a tracked issue are added automatically
-- A PR body with `Closes #N` closes issue N on merge, which moves it to `Done`
+1. Read `docs/PROJECT_STATE.md`. Read `docs/ARCHITECTURE.md` and decision
+   records only when the task touches that area.
+2. Reconcile: tickets in Doing or Review must match real branches and PRs
+   (`gh pr list --state all --limit 10` when the hook output raises doubts).
+   Fix the board or the state file if they are wrong, and say so.
+3. Continue the ticket in Doing if the user's request is about it; otherwise
+   handle the request, and when asked "what next", take the top unblocked
+   ticket in To do.
 
-## What Claude does
+If the board tools (`kanban_*`) are unavailable, the plugin is not installed
+in this environment: work normally, read `.kanban/board.json` directly, and do
+not hand-edit it.
 
-1. **When to track.** Create an issue only for non-trivial work: a feature,
-   bug fix or change spanning several steps or files. Typo fixes, one-line
-   tweaks, pure questions and read-only investigations get no issue.
-2. **Check first.** Before creating an issue, search open issues
-   (`gh issue list --search "<keywords>"`) and reuse a matching one.
-3. **Breaking down.** Split a large request into a parent issue plus
-   sub-issues that each fit roughly one PR. Each issue has a short goal and a
-   checklist of acceptance criteria. Use the existing labels; do not invent new
-   ones without need. Create with `gh issue create ... --project "Plantarium"`;
-   sub-issues are linked via `gh api` (`addSubIssue`) and join the board
-   automatically.
-4. **Starting.** When work on an issue begins, set it to `In Progress`. Not yet
-   started items stay in `Todo`; ideas without a plan go to `Backlog`.
-5. **Milestones and blockers.** Comment on the issue only at meaningful
-   milestones (approach decided, partial result, scope change), not per
-   commit. When blocked, set `Blocked` and comment what blocks it, what was
-   tried and what is needed to continue. Move it back to `In Progress` once
-   resolved.
-6. **Pull request.** The PR body references the issue (`Closes #N`; for
-   partial work `Refs #N`). After opening the PR, add the PR to the project and
-   set both the PR and the issue to `In Review`.
-7. **Done.** Never set `Done` manually for merged work; the merge does it. Set
-   `Done` by hand only for items finished without a PR after verification.
-   PRs stay open for the user's review; Claude never merges them unasked.
-8. **Economy.** Batch status changes, use the IDs above instead of querying,
-   and skip board updates that a built-in automation already handles.
+## Task workflow (non-trivial work only)
+
+Trivial changes (typos, one-line fixes, questions, read-only investigation)
+get no ticket. For everything else:
+
+1. **Check first.** `kanban_board` (and `include_done=true` if needed); reuse a
+   matching ticket instead of creating a duplicate.
+2. **Ticket.** `kanban_create_ticket` with a clear title and a body containing
+   the goal and a checklist of acceptance criteria. Put it in an epic when it
+   belongs to a larger feature. Use `status: "ready"` when the spec is agreed,
+   `"stub"` when it still needs refining.
+3. **Break down** large features into tickets that each fit roughly one PR,
+   linked with `depends_on`. Create only what is planned now; no speculative
+   tickets to fill the board.
+4. **Prioritise** by position in To do (top = next). The maintainer reorders
+   by dragging; propose an order, do not silently reshuffle theirs.
+5. **Start.** `kanban_claim` moves the ticket to Doing. Work on a normal git
+   branch (or the Desktop session's worktree). Do not use `/kanban:work`,
+   `kanban_worktree_start`, auto-merge or `auto_review`.
+6. **Milestones and blockers.** `kanban_note` at meaningful points (approach
+   chosen, partial result, scope change), not per commit. When blocked, note
+   what blocks it, what was tried and what is needed, then `kanban_release`
+   it, and record the blocker in `PROJECT_STATE.md`.
+7. **Review.** After the PR is opened, `kanban_move` the ticket to `review`
+   with `branch: "<branch name>"` and note the PR URL. The PR body references
+   the ticket id (`K-N`) and any GitHub issue (`Closes #N`).
+8. **Done.** Never move a ticket to Done by hand. The board moves it once the
+   PR's merge reaches local `main` (pull after merging). Work abandoned for
+   good is discarded by the maintainer.
+
+Board writes change `.kanban/board.json`; commit it together with the work on
+the current branch. In a merge conflict on that file, keep the newer board.
+
+## Project memory upkeep
+
+Update `docs/PROJECT_STATE.md` (and its "Last updated" / "Verified against"
+lines):
+
+- after a meaningful milestone (feature merged, ticket finished),
+- before ending substantial work, including what is left unfinished,
+- when blockers or priorities change.
+
+Write a decision record in `docs/DECISIONS/` when choosing between real
+alternatives that a future maintainer might question (new dependency,
+architecture boundary, data format, workflow). Update `docs/ARCHITECTURE.md`
+when modules, boundaries or data flow change. Keep all of it in English and
+short; record facts that the code cannot tell.
+
+## Explaining changes
+
+After substantial changes, give the maintainer a concise explanation in the
+conversation language covering: what changed; how it works technically; which
+files and modules matter; why this approach; how to test or inspect it; and
+remaining trade-offs or limitations. Explanations worth keeping go into
+`ARCHITECTURE.md` or a decision record.
+
+## GitHub Project #7
+
+Maintenance and external contributions only (Dependabot, outside issues and
+PRs). Do not add development PRs or tickets to it. When an outside issue is
+accepted as development work, create a board ticket mentioning `GH #N` and
+close the issue through the PR (`Closes #N`); its built-in workflows move it to
+Done on merge.
+
+## Pull requests
+
+Follow the repository's PR template. PRs stay open for the maintainer's
+review; never merge or enable auto-merge without explicit approval.

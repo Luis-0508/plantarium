@@ -67,10 +67,15 @@ interface.
 - Keep pull requests focused; avoid unrelated refactors or formatting changes.
 - Update the README or this guide when you change setup, architecture, the data
   schema or the GLB contract.
-- Work in progress is tracked on the
-  [Plantarium project board](https://github.com/users/Luis-0508/projects/7)
-  (Backlog, Todo, In Progress, In Review, Blocked, Done). Reference the issue in
-  the PR body (`Closes #N`); merging moves it to Done automatically.
+- Reference the issue you address in the PR body (`Closes #N`). Outside issues,
+  outside PRs and dependency updates are tracked on the
+  [maintenance project](https://github.com/users/Luis-0508/projects/7).
+  The maintainer's development plan lives in `.kanban/board.json` and
+  [`docs/PROJECT_STATE.md`](docs/PROJECT_STATE.md); you do not need any tool
+  for it. Please do not edit `.kanban/` in your PRs.
+- For how the code fits together, see
+  [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and the decision records in
+  [`docs/DECISIONS/`](docs/DECISIONS/README.md).
 
 ## Adding a plant
 
