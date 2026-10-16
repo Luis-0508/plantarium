@@ -5,7 +5,7 @@ authoritative:** if git, the code, `.kanban/board.json` or GitHub disagree
 with this file, trust them and correct this file.
 
 - Last updated: 2026-10-16
-- Verified against: `main` at `dde4ae4` plus branch `chore/project-board-workflow`
+- Verified against: `main` at `f4f3417`
 
 ## What exists
 
@@ -21,15 +21,24 @@ with this file, trust them and correct this file.
   all in CI. TypeScript strict mode.
 - Remotion showcase video in `video/` (separate npm project).
 - Repository automation: CI, PR labeler, daily Dependabot.
+- Development workflow: local claude-kanban board (`.kanban/`), project
+  memory in `docs/`, SessionStart context hook (K-1, PR #32). Being aligned
+  with the shared project-template workflow (hook in `.claude/hooks/`,
+  ID-based board merge driver and workflow tests in `scripts/workflow/`,
+  decision 0005) on `chore/unified-claude-workflow`.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for how it fits together and
 [DECISIONS/](DECISIONS/README.md) for why.
 
 ## Active work
 
-- **K-1** Set up Kanban board, project memory and session context hook —
-  in Review: branch `chore/project-board-workflow`, PR #32 open for the
-  maintainer. Moves to Done once merged and pulled into local `main`.
+- No tickets in Doing or Review. **K-1** (board, project memory, session
+  hook) merged via PR #32 and landed in Done automatically after `main` was
+  pulled.
+- PR #33 (records K-1 as landed in this file and the board) is open.
+- Workflow migration to the shared project template on
+  `chore/unified-claude-workflow` (contains PR #33's commit); PR open for
+  review. Maintenance work, no ticket.
 
 ## Blockers
 
@@ -58,4 +67,6 @@ Project #7, not on the development board.
   foliage fading and wind, measured ruler positions and hotspot snapping.
 - Requires WebGL 2; low-end device performance is unmeasured.
 - Board "Done" detection after a GitHub squash merge needs `main` pulled
-  locally and the board's PR poll to have seen the merge.
+  locally; the sweep runs on the next `kanban_next` call (confirmed with K-1).
+- GitHub's web merge does not run the board merge driver; a PR that shows a
+  conflict in `.kanban/board.json` must be rebased locally.

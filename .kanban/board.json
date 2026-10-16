@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "version": 9,
+  "version": 10,
   "next_ticket_seq": 5,
   "next_epic_seq": 3,
   "columns": [
@@ -93,12 +93,17 @@
           "at": "2026-10-16T10:31:11.798292400Z",
           "author": "claude",
           "text": "Implemented: pinned plugin v3.8.2 (binary attestation-verified), board, docs/PROJECT_STATE.md, ARCHITECTURE.md, DECISIONS 0001-0004, SessionStart hook, CLAUDE.md workflow, Project #7 repurposed. lint, build, unit (38) and browser tests pass. Fresh claude -p session recovered state and named K-2 as next. PR: https://github.com/Luis-0508/plantarium/pull/32"
+        },
+        {
+          "at": "2026-10-16T18:27:00.354560700Z",
+          "author": "kanban",
+          "text": "branch chore/project-board-workflow squashed or rewritten into main"
         }
       ],
       "column": {
-        "id": "review",
-        "owner": "claude",
-        "branch": "chore/project-board-workflow"
+        "id": "done",
+        "branch": "chore/project-board-workflow",
+        "completed_at": "2026-10-16T18:27:00.354560500Z"
       }
     }
   ]
