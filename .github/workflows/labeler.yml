@@ -1,0 +1,44 @@
+name: Pull request labels
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Ensure repository labels exist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ensure_label() {
+            gh label create "$1" --color "$2" --description "$3" --force
+          }
+
+          ensure_label "ui" "1D76DB" "User interface, localization, or browser shell changes"
+          ensure_label "three" "5319E7" "Three.js scene, rendering, or 3D behavior"
+          ensure_label "models" "A371F7" "Procedural plant model and geometry generator changes"
+          ensure_label "data" "0E8A16" "Plant dataset, schema, sources, or data-quality changes"
+          ensure_label "video" "FBCA04" "Remotion video, capture, or trailer changes"
+          ensure_label "tests" "C5DEF5" "Automated tests or test tooling"
+          ensure_label "documentation" "0075CA" "Documentation-only or documentation-related changes"
+          ensure_label "dependencies" "0366D6" "Dependency manifest, lockfile, or Dependabot changes"
+          ensure_label "ci" "000000" "GitHub Actions or repository automation changes"
+
+      - name: Apply labels from changed files
+        uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
+        with:
+          sync-labels: false

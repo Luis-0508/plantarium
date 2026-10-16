@@ -1,0 +1,53 @@
+ui:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/ui/**'
+          - 'src/i18n/**'
+          - 'index.html'
+          - 'public/**'
+
+three:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/three/**'
+
+models:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/three/models/**'
+
+data:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/data/**'
+
+video:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'video/**'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.test.*'
+          - '**/*.spec.*'
+          - 'playwright.config.*'
+          - 'vitest.config.*'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'LICENSE'
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'package.json'
+          - 'package-lock.json'
+          - '.github/dependabot.yml'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
