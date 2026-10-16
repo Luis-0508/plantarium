@@ -67,6 +67,10 @@ interface.
 - Keep pull requests focused; avoid unrelated refactors or formatting changes.
 - Update the README or this guide when you change setup, architecture, the data
   schema or the GLB contract.
+- Work in progress is tracked on the
+  [Plantarium project board](https://github.com/users/Luis-0508/projects/7)
+  (Backlog, Todo, In Progress, In Review, Blocked, Done). Reference the issue in
+  the PR body (`Closes #N`); merging moves it to Done automatically.
 
 ## Adding a plant
 
