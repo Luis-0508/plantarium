@@ -3,107 +3,143 @@
 # Claude Code workflow for Plantarium
 
 `AGENTS.md` (imported above) holds the project rules and wins over anything
-here. This file adds how Claude Code sessions keep continuity: what has been
-built, what is in progress, what comes next and why.
+here. This file only adds how Claude Code sessions keep continuity, track work
+and use installed tools. Personal preferences (conversation language, model
+delegation) belong in the user's global `~/.claude/CLAUDE.md`, not here.
 
 ## Sources of truth
 
 | What | Where | Authority |
 |---|---|---|
-| Code, history, branches | git | Highest. Always wins. |
-| Development tasks and their state | `.kanban/board.json` (claude-kanban) | Live task state |
+| Code, history, branches, PRs | git and GitHub | Highest. Always wins. |
+| Development tasks | `.kanban/board.json` (claude-kanban plugin) | Live task state |
 | Narrative state, blockers, priorities | `docs/PROJECT_STATE.md` | Snapshot; may be stale |
-| Code structure and data flow | `docs/ARCHITECTURE.md` | Explanation |
-| Why things are the way they are | `docs/DECISIONS/` | Decision records |
+| Structure and data flow | `docs/ARCHITECTURE.md` | Explanation |
+| Reasons behind choices | `docs/DECISIONS/` | Decision records |
 | Dependabot, outside issues and PRs | GitHub Project #7 | Maintenance only |
 
-Notes are never authoritative over the repository. When they disagree, verify
-against git and GitHub, act on the facts, and correct the note.
+When notes disagree with the repository, act on the facts and correct the note.
 
 ## Session start
 
-A `SessionStart` hook (`scripts/session-context.mjs`) prints branch, sync
-state, uncommitted files, recent commits, a staleness hint for
-`PROJECT_STATE.md` and the board's Doing / Review / top To do tickets. Then:
+A `SessionStart` hook (`.claude/hooks/session-context.mjs`) runs on startup,
+resume, clear and after compaction. It injects branch and sync state,
+uncommitted files, recent commits, the board's Doing / Review / top To do
+tickets and the content of `docs/PROJECT_STATE.md`. Do not re-read what it
+already showed. Then:
 
-1. Read `docs/PROJECT_STATE.md`. Read `docs/ARCHITECTURE.md` and decision
-   records only when the task touches that area.
+1. If it reports the project memory as **not initialized** or the **Kanban
+   board missing**, tell the user and offer the `init-project` skill; do not
+   initialize without a go-ahead.
 2. Reconcile: tickets in Doing or Review must match real branches and PRs
-   (`gh pr list --state all --limit 10` when the hook output raises doubts).
-   Fix the board or the state file if they are wrong, and say so.
-3. Continue the ticket in Doing if the user's request is about it; otherwise
-   handle the request, and when asked "what next", take the top unblocked
-   ticket in To do.
+   (`gh pr list --state all --limit 10` only when the output raises doubts).
+   Fix a wrong board or state file and say so.
+3. Handle the user's request. Read `ARCHITECTURE.md` or decision records only
+   when the task touches that area. Continue the ticket in Doing if the
+   request is about it; when asked "what next", propose the top unblocked
+   To do ticket.
 
-If the board tools (`kanban_*`) are unavailable, the plugin is not installed
-in this environment: work normally, read `.kanban/board.json` directly, and do
-not hand-edit it.
+If the hook output is missing (for example Node.js is unavailable), read
+`docs/PROJECT_STATE.md` once and run `git status` instead.
 
-## Task workflow (non-trivial work only)
+## Task tracking with the Kanban board
 
-Trivial changes (typos, one-line fixes, questions, read-only investigation)
-get no ticket. For everything else:
+The Kanban board is a default part of this workflow, like the project memory
+and the session hook. It is optional only for external contributors and
+environments without the maintainer's plugins; building, testing and
+contributing never depend on it.
 
-1. **Check first.** `kanban_board` (and `include_done=true` if needed); reuse a
-   matching ticket instead of creating a duplicate.
-2. **Ticket.** `kanban_create_ticket` with a clear title and a body containing
-   the goal and a checklist of acceptance criteria. Put it in an epic when it
-   belongs to a larger feature. Use `status: "ready"` when the spec is agreed,
-   `"stub"` when it still needs refining.
-3. **Break down** large features into tickets that each fit roughly one PR,
-   linked with `depends_on`. Create only what is planned now; no speculative
-   tickets to fill the board.
-4. **Prioritise** by position in To do (top = next). The maintainer reorders
+When the `kanban_*` tools are unavailable, say once per session that the
+claude-kanban plugin is missing and point to "Installing the Kanban plugin" in
+`docs/WORKFLOW.md`. Then work normally: read `.kanban/board.json` directly if
+needed and never hand-edit it.
+
+Trivial work (questions, typos, one-line fixes, read-only investigation) gets
+no ticket. For everything else:
+
+1. **Check first.** `kanban_board`, or `kanban_ticket` / `kanban_epic` for one
+   slice (`include_done=true` only when needed). Reuse a matching ticket
+   instead of creating a duplicate.
+2. **Ticket.** `kanban_create_ticket` with a clear title and a body holding
+   the goal and a checklist of acceptance criteria. Attach it to an epic when
+   it belongs to a larger feature. Keep the default `review` status so the
+   maintainer vets it; use `ready` only for a spec the user already agreed to
+   in the conversation, `stub` when it still needs refining.
+3. **Break down** large features into an epic with tickets that each fit
+   roughly one pull request, linked with `depends_on`. Create only what is
+   planned now; no speculative tickets.
+4. **Prioritize** by position in To do (top = next). The maintainer reorders
    by dragging; propose an order, do not silently reshuffle theirs.
-5. **Start.** `kanban_claim` moves the ticket to Doing. Work on a normal git
-   branch (or the Desktop session's worktree). Do not use `/kanban:work`,
-   `kanban_worktree_start`, auto-merge or `auto_review`.
-6. **Milestones and blockers.** `kanban_note` at meaningful points (approach
-   chosen, partial result, scope change), not per commit. When blocked, note
-   what blocks it, what was tried and what is needed, then `kanban_release`
-   it, and record the blocker in `PROJECT_STATE.md`.
-7. **Review.** After the PR is opened, `kanban_move` the ticket to `review`
-   with `branch: "<branch name>"` and note the PR URL. The PR body references
-   the ticket id (`K-N`) and any GitHub issue (`Closes #N`).
-8. **Done.** Never move a ticket to Done by hand. The board moves it once the
-   PR's merge reaches local `main` (pull after merging). Work abandoned for
-   good is discarded by the maintainer.
+5. **Start.** `kanban_claim` moves the ticket to Doing. Work on one branch per
+   ticket (`<type>/K-<n>-<slug>`) or the session's existing worktree.
+   Plantarium does not use `/kanban:work` or `kanban_worktree_start`
+   (decision 0004).
+6. **Progress and blockers.** `kanban_note` at milestones (approach chosen,
+   partial result, scope change), not per commit. When blocked, note what
+   blocks it, what was tried and what is needed, `kanban_release` the ticket,
+   and record the blocker in `PROJECT_STATE.md`.
+7. **Review.** After opening the PR, `kanban_move` the ticket to `review`
+   with its branch and note the PR URL. The PR body names the ticket (`K-N`)
+   and any issue (`Closes #N`).
+8. **Done** is never set by hand: the board moves a ticket once its merge
+   reaches local `main` (pull after merging). Never set `auto_merge` or
+   enable `auto_review`; merging stays the maintainer's decision.
 
-Board writes change `.kanban/board.json`; commit it together with the work on
-the current branch. In a merge conflict on that file, keep the newer board.
-
-## Project memory upkeep
-
-Update `docs/PROJECT_STATE.md` (and its "Last updated" / "Verified against"
-lines):
-
-- after a meaningful milestone (feature merged, ticket finished),
-- before ending substantial work, including what is left unfinished,
-- when blockers or priorities change.
-
-Write a decision record in `docs/DECISIONS/` when choosing between real
-alternatives that a future maintainer might question (new dependency,
-architecture boundary, data format, workflow). Update `docs/ARCHITECTURE.md`
-when modules, boundaries or data flow change. Keep all of it in English and
-short; record facts that the code cannot tell.
-
-## Explaining changes
-
-After substantial changes, give the maintainer a concise explanation in the
-conversation language covering: what changed; how it works technically; which
-files and modules matter; why this approach; how to test or inspect it; and
-remaining trade-offs or limitations. Explanations worth keeping go into
-`ARCHITECTURE.md` or a decision record.
+The board lives in the main working tree's `.kanban/board.json`, also during
+worktree sessions. Commit board changes from there, never a worktree's stale
+copy. Merges and rebases go through the ID-based merge driver in
+`scripts/workflow/` (decision 0005); if the hook says it is not configured,
+tell the user. When the driver flags a merge, check the listed tickets and
+report them. Never resolve the file by keeping one whole side (`--ours`,
+`--theirs`, "newer board"): that drops the other side's tickets and notes.
+Details: `docs/WORKFLOW.md`.
 
 ## GitHub Project #7
 
 Maintenance and external contributions only (Dependabot, outside issues and
 PRs). Do not add development PRs or tickets to it. When an outside issue is
 accepted as development work, create a board ticket mentioning `GH #N` and
-close the issue through the PR (`Closes #N`); its built-in workflows move it to
-Done on merge.
+close the issue through the PR (`Closes #N`); its built-in workflows move it
+to Done on merge.
+
+## Project memory upkeep
+
+Update `docs/PROJECT_STATE.md` and its "Last updated" / "Verified against"
+lines after a meaningful milestone, before ending substantial work (including
+what is left unfinished), and when blockers or priorities change. Keep it
+under about 80 lines: it is injected into every session. Maintain
+`ARCHITECTURE.md` and `docs/DECISIONS/` as `AGENTS.md` describes.
+
+## Skills and tools
+
+Use installed skills when their description matches the task; check the
+available-skills list instead of assuming a skill exists. Typical matches:
+
+- building or reshaping UI (a new screen, page or component, layout, visual
+  style, theming, a redesign): invoke `frontend-design` (or the installed
+  equivalent) once before writing that UI code. Not for small UI fixes such
+  as copy, a logic bug or a single style property;
+- architecture choices or large changes the maintainer should approve before
+  implementation: propose the approach in plan mode first, and record the
+  decision as `AGENTS.md` describes;
+- finished non-trivial changes: a code review, security review or testing
+  skill when one fits the change's risk.
+
+Invoke a skill once per task phase, not repeatedly, and never only to show it
+exists. Skills that deploy, publish, send messages, schedule jobs, delegate to
+external workers or run autonomous loops (for example `/kanban:work`) run only
+when the user asks for them explicitly.
+
+## Explaining substantial changes
+
+After substantial implementation work, explain in the user's conversation
+language: what changed; how it works technically; the important files and
+functions; why this approach; alternatives and trade-offs; how to test it
+yourself. Skip this for trivial changes. Explanations worth keeping go into
+`ARCHITECTURE.md` or a decision record, in English.
 
 ## Pull requests
 
-Follow the repository's PR template. PRs stay open for the maintainer's
-review; never merge or enable auto-merge without explicit approval.
+Follow the pull request template. Leave every PR open for the maintainer's
+review; never merge, enable auto-merge or force-push without explicit
+approval. Report the PR URL, the checks actually run and any pending CI.
