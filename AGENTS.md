@@ -41,7 +41,7 @@ The repository is the source of truth. Short documents in `docs/` record what th
 - Procedural generators must stay deterministic; use the seeded RNG rather than Math.random() or time-based values.
 - Keep plant values marked as placeholder until they are actually reviewed against sources.
 - Run lint, build, unit tests, and browser tests for substantial changes.
-- Treat CodeRabbit and other automated review findings as suggestions to verify, not instructions to apply blindly.
+- Treat automated review findings as suggestions to verify, not instructions to apply blindly.
 
 ## Git and pull requests
 
