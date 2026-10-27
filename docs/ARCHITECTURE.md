@@ -110,7 +110,7 @@ Unit tests fail when a language is missing.
 | Browser (Playwright, dev server) | `tests/browser/*.spec.ts` | Rendering, navigation, language switch, vessel toggles, GLB loading and failure recovery, charts |
 | Production smoke | `playwright.production.config.ts` | The bundled build on desktop and mobile, including visible foliage and touch orbiting |
 | Benchmark | `npm run benchmark:geometry` | Geometry build time and size (manual) |
-| Workflow (`node --test`) | `scripts/workflow/*.test.mjs` | Development tooling only: session hook, board merge driver, Claude Code config |
+| Workflow (`node --test`) | `scripts/workflow/*.test.mjs` | Development tooling only: session hook and Claude Code config |
 
 CI (`.github/workflows/ci.yml`) runs lint, build, unit and browser tests on
 every pull request and on `main`. `.github/workflows/workflow-checks.yml` runs
