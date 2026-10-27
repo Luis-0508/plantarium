@@ -8,7 +8,7 @@
 
 ## Why
 
-<!-- The problem or motivation. Link related issues (e.g. "Closes #12") and the board ticket (K-N), if any. -->
+<!-- The problem or motivation. Link related issues (e.g. "Closes #12"). -->
 
 ## Testing
 

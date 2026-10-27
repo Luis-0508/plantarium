@@ -70,13 +70,12 @@ interface.
 - Reference the issue you address in the PR body (`Closes #N`). Outside issues,
   outside PRs and dependency updates are tracked on the
   [maintenance project](https://github.com/users/Luis-0508/projects/7).
-  The maintainer's default workflow uses Claude Code with a local Kanban board
-  (`CLAUDE.md`, `.claude/`, `.kanban/`) and
-  [`docs/PROJECT_STATE.md`](docs/PROJECT_STATE.md).
-  None of it is required to contribute: the board is plain JSON you can read,
-  and these files do not affect building or testing the project. Please do not edit `.kanban/` in
-  your PRs. [`docs/WORKFLOW.md`](docs/WORKFLOW.md) explains how the pieces fit
-  together.
+  The maintainer works with Claude Code (`CLAUDE.md`, `.claude/`) and
+  [`docs/PROJECT_STATE.md`](docs/PROJECT_STATE.md). Planned work is tracked in
+  GitHub issues and milestones; pick an open issue or open one before larger
+  changes. None of the tooling is required to contribute, and it does not affect
+  building or testing the project. [`docs/WORKFLOW.md`](docs/WORKFLOW.md)
+  explains how the pieces fit together.
 - For how the code fits together, see
   [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and the decision records in
   [`docs/DECISIONS/`](docs/DECISIONS/README.md).

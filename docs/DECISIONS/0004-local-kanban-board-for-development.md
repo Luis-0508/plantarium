@@ -1,6 +1,6 @@
 # 0004. Local Kanban board for development; GitHub Project for maintenance
 
-- Status: Accepted
+- Status: Superseded by [0006](0006-github-issues-for-planned-work.md) (Kanban board parts)
 - Date: 2026-10-16
 
 ## Context
